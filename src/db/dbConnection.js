@@ -1,7 +1,11 @@
 const Sequelize = require('sequelize')
 const Umzug = require('umzug')
 const logger = require('../util/logger')
-const { DB_CONNECTION_STRING, inStaging } = require('../util/config')
+const {
+  DB_CONNECTION_STRING,
+  inStaging,
+  inProduction,
+} = require('../util/config')
 
 const DB_CONNECTION_RETRY_LIMIT = 10
 
@@ -28,7 +32,7 @@ const runMigrations = async () => {
 
 const testConnection = async () => {
   await sequelize.authenticate()
-  await runMigrations()
+  if (!(inStaging || inProduction)) await runMigrations()
 }
 
 // eslint-disable-next-line no-promise-executor-return
