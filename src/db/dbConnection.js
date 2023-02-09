@@ -9,7 +9,7 @@ const {
 
 const DB_CONNECTION_RETRY_LIMIT = 10
 
-const sequelize = new Sequelize(DB_CONNECTION_STRING, { logging: inStaging })
+const sequelize = new Sequelize(DB_CONNECTION_STRING, { logging: false })
 
 const runMigrations = async () => {
   const migrator = new Umzug({
