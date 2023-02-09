@@ -1,11 +1,18 @@
 const express = require('express')
+const Sentry = require('@sentry/node')
 
 const { connectToDatabase } = require('./db/dbConnection')
 const { updater } = require('./updater')
 const logger = require('./util/logger')
 const { PORT, inProduction } = require('./util/config')
+const initializeSentry = require('./util/sentry')
 
 const app = express()
+
+initializeSentry(app)
+
+app.use(Sentry.Handlers.requestHandler())
+app.use(Sentry.Handlers.tracingHandler())
 
 app.get('/ping', (_, res) => res.send('pong'))
 
@@ -14,6 +21,8 @@ app.get('/run', (_, res) => {
 
   return res.status(202).end()
 })
+
+app.use(Sentry.Handlers.errorHandler())
 
 const start = async () => {
   await connectToDatabase()
