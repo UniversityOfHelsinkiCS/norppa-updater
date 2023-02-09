@@ -1,0 +1,31 @@
+version: '3.5'
+
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: dev.Dockerfile
+    image: updater-dev
+    volumes:
+      - ./:/opt/app-root/src
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DATABASE=postgres
+    ports:
+      - 3000:3000
+    container_name: updater-dev
+  db:
+    image: postgres:13.2
+    environment:
+      - PGDATA=/data
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/data
+    container_name: updater-db
+
+volumes:
+  pg_data:
