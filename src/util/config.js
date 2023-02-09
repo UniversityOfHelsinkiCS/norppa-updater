@@ -11,6 +11,8 @@ const { API_TOKEN } = process.env
 
 const PORT = process.env.PORT || 3000
 
+const NODE_ENV = process.env.NODE_ENV || 'development'
+
 const IMPORTER_API_URL = process.env.IMPORTER_API_URL || ''
 
 let DB_CONNECTION_STRING = `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:5432/${process.env.POSTGRES_DATABASE}?targetServerType=primary`
@@ -27,6 +29,7 @@ module.exports = {
   GIT_SHA,
   DB_CONNECTION_STRING,
   PORT,
+  NODE_ENV,
   API_TOKEN,
   IMPORTER_API_URL,
   ADMINS,

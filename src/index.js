@@ -4,7 +4,7 @@ const Sentry = require('@sentry/node')
 const { connectToDatabase } = require('./db/dbConnection')
 const { updater } = require('./updater')
 const logger = require('./util/logger')
-const { PORT, inProduction } = require('./util/config')
+const { PORT, NODE_ENV } = require('./util/config')
 const initializeSentry = require('./util/sentry')
 
 const app = express()
@@ -30,11 +30,7 @@ const start = async () => {
   await updater.start()
 
   app.listen(PORT, () => {
-    logger.info(
-      `Started on port ${PORT} with environment ${
-        inProduction ? 'production' : 'development'
-      }`,
-    )
+    logger.info(`Started on port ${PORT} with environment ${NODE_ENV}`)
   })
 }
 
