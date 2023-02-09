@@ -68,12 +68,13 @@ const run = async () => {
 }
 
 const start = async () => {
-  if (!inProduction || inStaging) {
-    logger.info('Not running updater outside production')
+  if (!(inProduction || inStaging)) {
+    logger.info('Not running updater in development')
     return
   }
   logger.info('Setup cron job')
-  const cronTime = '30 1 * * *' // Every night at 01:30 in production
+  // Every night at 01:30 in production. Only on weekend in staging for teacher and enrolment deletion
+  const cronTime = inProduction ? '30 1 * * *' : '30 1 * * 0,1'
   schedule(cronTime, run)
 
   logger.info('Running updater according to cron', { cron: cronTime })
