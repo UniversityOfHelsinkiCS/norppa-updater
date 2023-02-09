@@ -4,8 +4,12 @@ const logger = require('../util/logger')
 const { schedule } = require('../util/cron')
 const updateUsers = require('./updateUsers')
 const updateOrganisations = require('./updateOrganisations')
-const { updateCoursesAndTeacherFeedbackTargets } = require('./updateCoursesAndTeacherFeedbackTargets')
-const { updateStudentFeedbackTargets } = require('./updateStudentFeedbackTargets')
+const {
+  updateCoursesAndTeacherFeedbackTargets,
+} = require('./updateCoursesAndTeacherFeedbackTargets')
+const {
+  updateStudentFeedbackTargets,
+} = require('./updateStudentFeedbackTargets')
 const { updateFeedbackTargetCounts } = require('./updateFeedbackTargetCounts')
 const { UpdaterStatus } = require('../models')
 

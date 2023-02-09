@@ -2,7 +2,7 @@ FROM node:16
 
 ENV TZ="Europe/Helsinki"
 
-WORKDIR /opt/app-root/src
+WORKDIR /usr/src/app
 
 COPY package* ./
 RUN npm i

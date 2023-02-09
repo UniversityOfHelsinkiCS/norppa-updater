@@ -7,7 +7,13 @@ const logError = (message, error) => {
   Sentry.captureException(error)
 }
 
-const safeBulkCreate = async ({ entityName, bulkCreate, fallbackCreate, options, entities }) => {
+const safeBulkCreate = async ({
+  entityName,
+  bulkCreate,
+  fallbackCreate,
+  options,
+  entities,
+}) => {
   try {
     const result = await bulkCreate(entities, options)
     return result
@@ -20,7 +26,12 @@ const safeBulkCreate = async ({ entityName, bulkCreate, fallbackCreate, options,
         const res = await fallbackCreate(entity, options)
         result.push(res)
       } catch (error) {
-        logError(`[UPDATER] Could not create ${entityName} (${JSON.stringify(entity)}), reason:`, error)
+        logError(
+          `[UPDATER] Could not create ${entityName} (${JSON.stringify(
+            entity,
+          )}), reason:`,
+          error,
+        )
       }
     }
     return result

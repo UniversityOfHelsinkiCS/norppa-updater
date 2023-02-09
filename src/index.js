@@ -1,3 +1,10 @@
+const { connectToDatabase } = require('./db/dbConnection')
 const { updater } = require('./updater')
 
-updater.start()
+const start = async () => {
+  await connectToDatabase()
+
+  updater.start()
+}
+
+start()
