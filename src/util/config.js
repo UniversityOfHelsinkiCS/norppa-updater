@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 const inProduction = process.env.NODE_ENV === 'production'
-const inStaging = process.env.REACT_APP_STAGING === 'true'
+const inStaging = process.env.NODE_ENV === 'staging'
 const inE2EMode = process.env.REACT_APP_E2E === 'true'
 const basePath = process.env.PUBLIC_URL || ''
 
