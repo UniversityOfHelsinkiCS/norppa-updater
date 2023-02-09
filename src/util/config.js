@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const inProduction = process.env.NODE_ENV === 'production'
 const inStaging = process.env.REACT_APP_STAGING === 'true'
 const inE2EMode = process.env.REACT_APP_E2E === 'true'
