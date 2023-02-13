@@ -9,6 +9,7 @@ const {
 const {
   deleteCancelledCourses,
 } = require('./updater/updateCoursesAndTeacherFeedbackTargets')
+const { start: startEnrolmentsCron } = require('./util/updateEnrolmentsCron')
 const logger = require('./util/logger')
 const { PORT, NODE_ENV } = require('./util/config')
 const initializeSentry = require('./util/sentry')
@@ -50,6 +51,7 @@ const start = async () => {
   await connectToDatabase()
   await updater.checkStatusOnStartup()
   await updater.start()
+  await startEnrolmentsCron()
 
   app.listen(PORT, () => {
     logger.info(`Started on port ${PORT} with environment ${NODE_ENV}`)
