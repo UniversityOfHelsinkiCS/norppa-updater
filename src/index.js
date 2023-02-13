@@ -3,6 +3,12 @@ const Sentry = require('@sentry/node')
 
 const { connectToDatabase } = require('./db/dbConnection')
 const { updater } = require('./updater')
+const {
+  updateEnrolmentsOfCourse,
+} = require('./updater/updateStudentFeedbackTargets')
+const {
+  deleteCancelledCourses,
+} = require('./updater/updateCoursesAndTeacherFeedbackTargets')
 const logger = require('./util/logger')
 const { PORT, NODE_ENV } = require('./util/config')
 const initializeSentry = require('./util/sentry')
@@ -18,6 +24,22 @@ app.get('/ping', (_, res) => res.send('pong'))
 
 app.get('/run', (_, res) => {
   updater.run()
+
+  return res.status(202).end()
+})
+
+app.post('/enrolments:id', async (req, res) => {
+  const { id } = req.params
+
+  await updateEnrolmentsOfCourse(id)
+
+  return res.status(201).end()
+})
+
+app.delete('/courses:id', async (req, res) => {
+  const { id } = req.params
+
+  await deleteCancelledCourses([id])
 
   return res.status(202).end()
 })
