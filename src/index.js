@@ -28,7 +28,7 @@ app.get('/run', (_, res) => {
   return res.status(202).end()
 })
 
-app.post('/enrolments:id', async (req, res) => {
+app.post('/enrolments/:id', async (req, res) => {
   const { id } = req.params
 
   await updateEnrolmentsOfCourse(id)
@@ -36,7 +36,7 @@ app.post('/enrolments:id', async (req, res) => {
   return res.status(201).end()
 })
 
-app.delete('/courses:id', async (req, res) => {
+app.delete('/courses/:id', async (req, res) => {
   const { id } = req.params
 
   await deleteCancelledCourses([id])
