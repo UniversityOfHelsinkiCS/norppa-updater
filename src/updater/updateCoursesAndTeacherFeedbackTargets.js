@@ -326,9 +326,24 @@ const getIncludeCurs = async () => {
   return includeCurs.map(({ id }) => id)
 }
 
-const sortAccessStatus = (a, b) =>
-  // eslint-disable-next-line no-nested-ternary
-  a.accessStatus < b.accessStatus ? -1 : a.accessStatus > b.accessStatus ? 1 : 0
+const sortAccessStatus = (a, b) => {
+  // Prevent more important access status from being overwritten
+  // Sort teacherFeedbackTargets in the following order:
+  // responsible teacher > administrative person > teacher
+  const a1 = a.accessStatus === 'RESPONSIBLE_TEACHER'
+  const a2 = !a.isAdministrativePerson
+  const b1 = b.accessStatus === 'RESPONSIBLE_TEACHER'
+  const b2 = !b.isAdministrativePerson
+
+  if (a1 && !b1) return -1
+  if (!a1 && b1) return 1
+  if (a1 && b1) {
+    if (a2 && !b2) return -1
+    if (!a2 && b2) return 1
+  }
+
+  return 0
+}
 
 const createFeedbackTargets = async (courses) => {
   const courseIdToPersonIds = {}
