@@ -1,13 +1,13 @@
 const { STRING, DATE, INTEGER } = require('sequelize')
 
 module.exports = {
-  up: async (queryInterface) => {
-    await queryInterface.sequelize.transaction(async (transaction) => {
+  up: async queryInterface => {
+    await queryInterface.sequelize.transaction(async transaction => {
       try {
         await queryInterface.dropTable('course_units_tags')
       } catch (error) {
         console.log(
-          "CU tags didn't exist (delete this logic and old migration once production and all dev machines are migrated)",
+          "CU tags didn't exist (delete this logic and old migration once production and all dev machines are migrated)"
         )
       }
 
@@ -38,11 +38,11 @@ module.exports = {
             allowNull: false,
           },
         },
-        { transaction },
+        { transaction }
       )
     })
   },
-  down: async (queryInterface) => {
+  down: async queryInterface => {
     await queryInterface.dropTable('course_units_tags')
   },
 }

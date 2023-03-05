@@ -4,7 +4,16 @@ const { BOOLEAN } = require('sequelize')
 const UserFeedbackTarget = require('./userFeedbackTarget')
 const { sequelize } = require('../db/dbConnection')
 
-class Feedback extends Model {}
+class Feedback extends Model {
+  toPublicObject() {
+    return {
+      id: this.id,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      data: this.data,
+    }
+  }
+}
 
 Feedback.init(
   {
@@ -24,15 +33,15 @@ Feedback.init(
   {
     underscored: true,
     sequelize,
-  },
+  }
 )
 
-Feedback.beforeDestroy(async (feedback) => {
+Feedback.beforeDestroy(async feedback => {
   await UserFeedbackTarget.update(
     {
       feedbackId: null,
     },
-    { where: { feedbackId: feedback.id } },
+    { where: { feedbackId: feedback.id } }
   )
 })
 

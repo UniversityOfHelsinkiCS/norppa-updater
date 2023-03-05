@@ -1,8 +1,8 @@
 const { STRING, DATE, INTEGER } = require('sequelize')
 
 module.exports = {
-  up: async (queryInterface) => {
-    await queryInterface.sequelize.transaction(async (transaction) => {
+  up: async queryInterface => {
+    await queryInterface.sequelize.transaction(async transaction => {
       await queryInterface.createTable(
         'course_units_tags',
         {
@@ -31,11 +31,11 @@ module.exports = {
             allowNull: false,
           },
         },
-        { transaction },
+        { transaction }
       )
     })
   },
-  down: async (queryInterface) => {
+  down: async queryInterface => {
     await queryInterface.dropTable('course_units_tags')
   },
 }

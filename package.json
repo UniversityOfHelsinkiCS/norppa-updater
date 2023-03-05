@@ -7,7 +7,8 @@
     "start": "docker compose up",
     "start:dev": "NODE_ENV=development nodemon src/index.js",
     "start:prod": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync": "./scripts/sync_code.sh ../palaute"
   },
   "repository": {
     "type": "git",

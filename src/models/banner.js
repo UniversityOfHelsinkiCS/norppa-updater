@@ -1,8 +1,40 @@
-const { ENUM, DATE } = require('sequelize')
+const { ENUM, DATE, Op } = require('sequelize')
 const { Model, JSONB } = require('sequelize')
 const { sequelize } = require('../db/dbConnection')
+const { ADMINS } = require('../util/config')
 
-class Banner extends Model {}
+class Banner extends Model {
+  static async getForUser(user) {
+    let access = ['STUDENT']
+    const isAdmin = ADMINS.includes(user.username)
+    const isTeacher = await user.isTeacher()
+    const hasOrgAccess = (await user.getOrganisationAccess())?.length > 0
+
+    if (isAdmin) {
+      access = access.concat(['TEACHER', 'ORG', 'ADMIN'])
+    } else if (hasOrgAccess) {
+      access = access.concat(['TEACHER', 'ORG'])
+    } else if (isTeacher) {
+      access = access.concat(['TEACHER'])
+    }
+
+    const banners = await Banner.findAll({
+      where: {
+        accessGroup: {
+          [Op.in]: access,
+        },
+        startDate: {
+          [Op.lt]: new Date(),
+        },
+        endDate: {
+          [Op.gt]: new Date(),
+        },
+      },
+    })
+
+    return banners
+  }
+}
 
 Banner.init(
   {
@@ -27,7 +59,7 @@ Banner.init(
     underscored: true,
     timestamps: true,
     sequelize,
-  },
+  }
 )
 
 module.exports = Banner
