@@ -1,5 +1,3 @@
-const { Op } = require('sequelize')
-
 const Feedback = require('./feedback')
 const User = require('./user')
 const CourseRealisation = require('./courseRealisation')
@@ -80,21 +78,6 @@ Organisation.belongsToMany(CourseRealisation, {
   through: CourseRealisationsOrganisation,
   as: 'courseRealisations',
 })
-
-// eslint-disable-next-line func-names
-User.prototype.feedbackTargetsHasTeacherAccessTo = function () {
-  return FeedbackTarget.findAll({
-    include: {
-      model: UserFeedbackTarget,
-      as: 'userFeedbackTargets',
-      where: {
-        userId: this.id,
-        accessStatus: { [Op.in]: ['RESPONSIBLE_TEACHER', 'TEACHER'] },
-      },
-      required: true,
-    },
-  })
-}
 
 FeedbackTarget.belongsToMany(User, {
   through: UserFeedbackTarget,
@@ -203,11 +186,11 @@ Tag.hasMany(CourseUnitsTag)
  * Groups associations
  */
 
-CourseRealisation.hasMany(Group, {
-  foreignKey: 'courseRealisationId',
+FeedbackTarget.hasMany(Group, {
+  foreignKey: 'feedbackTargetId',
 })
-Group.belongsTo(CourseRealisation, {
-  foreignKey: 'courseRealisationId',
+Group.belongsTo(FeedbackTarget, {
+  foreignKey: 'feedbackTargetId',
 })
 
 module.exports = {
