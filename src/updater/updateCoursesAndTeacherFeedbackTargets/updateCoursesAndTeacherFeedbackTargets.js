@@ -8,18 +8,19 @@ const {
   CourseUnitsOrganisation,
   CourseRealisation,
   FeedbackTarget,
+  Group,
   FeedbackTargetLog,
   UserFeedbackTarget,
   Survey,
   CourseRealisationsOrganisation,
   InactiveCourseRealisation,
   CourseRealisationsTag,
-} = require('../models')
+} = require('../../models')
 
-const logger = require('../util/logger')
-const mangleData = require('./mangleData')
-const { sequelize } = require('../db/dbConnection')
-const { safeBulkCreate } = require('./util')
+const logger = require('../../util/logger')
+const mangleData = require('../mangleData')
+const { sequelize } = require('../../db/dbConnection')
+const { safeBulkCreate } = require('../util')
 
 const validRealisationTypes = [
   'urn:code:course-unit-realisation-type:teaching-participation-lab',
@@ -345,6 +346,38 @@ const sortAccessStatus = (a, b) => {
   return 0
 }
 
+const createStudyGroups = async (feedbackTargets, courses) => {
+  const groups = []
+
+  feedbackTargets.forEach((fbt, i) => {
+    const courseRealisationData = courses.find(c => c.id === fbt.dataValues.typeId)
+    if (!courseRealisationData) return
+    const { studyGroupSets } = courseRealisationData
+
+    for (const { studySubGroups } of studyGroupSets) {
+
+      // Create groups only when more than 1 sub group.
+      if (!studySubGroups?.length > 1) return
+      
+      groups.push(...studySubGroups.map(ssg => ({
+        id: ssg.id,
+        feedbackTargetId: fbt.id,
+        name: ssg.name,
+      })))
+    }
+  })
+
+  await safeBulkCreate({
+    entityName: "Group",
+    entities: groups,
+    bulkCreate: async (e, opts) => Group.bulkCreate(e, opts),
+    fallbackCreate: async (e, opts) => Group.create(e, opts),
+    options: {
+      updateOnDuplicate: ['name'],
+    },
+  })
+}
+
 const createFeedbackTargets = async (courses) => {
   const courseIdToPersonIds = {}
 
@@ -436,6 +469,8 @@ const createFeedbackTargets = async (courses) => {
   const feedbackTargetsWithIds = feedbackTargetsWithEditedWithIds.concat(
     feedbackTargetsWithoutEditedWithIds,
   )
+
+  await createStudyGroups(feedbackTargetsWithIds, courses)
 
   const userFeedbackTargets = []
     .concat(
@@ -539,6 +574,16 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
   })
 
   logger.info(`Destroyed ${destroyedFeedbackTargets} feedback targets`)
+
+  const destroyedGroups = await Group.destroy({
+    where: {
+      feedbackTargetId: {
+        [Op.in]: feedbackTargetIds,
+      }
+    }
+  })
+
+  logger.info(`Destroyed ${destroyedGroups} groups`)
 
   const destroyedCourseRealisationOrganisations =
     await CourseRealisationsOrganisation.destroy({
