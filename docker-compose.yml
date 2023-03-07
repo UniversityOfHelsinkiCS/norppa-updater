@@ -14,7 +14,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DATABASE=postgres
     ports:
-      - 3000:3000
+      - 8000:3000
     container_name: updater-dev
   db:
     image: postgres:13.2

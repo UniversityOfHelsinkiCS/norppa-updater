@@ -68,6 +68,7 @@ const run = async () => {
 }
 
 const start = async () => {
+  run()
   if (!(inProduction || inStaging)) {
     logger.info('Not running updater in development')
     return

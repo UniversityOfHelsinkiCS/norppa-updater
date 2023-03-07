@@ -348,55 +348,36 @@ const sortAccessStatus = (a, b) => {
 const createFeedbackTargets = async (courses) => {
   const courseIdToPersonIds = {}
 
-  const feedbackTargetPayloads = [].concat(
-    ...courses.map((course) => {
-      courseIdToPersonIds[course.id] = course.responsibilityInfos
-        .filter(({ personId }) => personId)
-        .map(({ personId, roleUrn }) => ({ personId, roleUrn }))
+  const feedbackTargetPayloads = courses.map((course) => {
+    courseIdToPersonIds[course.id] = course.responsibilityInfos
+      .filter(({ personId }) => personId)
+      .map(({ personId, roleUrn }) => ({ personId, roleUrn }))
 
-      const courseUnit = course.courseUnits[0]
-      const courseEndDate = dateFns.endOfDay(
-        new Date(course.activityPeriod.endDate),
-      )
+    const courseUnit = course.courseUnits[0]
+    const courseEndDate = dateFns.endOfDay(
+      new Date(course.activityPeriod.endDate),
+    )
 
-      const opensAt = formatDate(courseEndDate)
-      const closesAtWithoutTimeZone = formatWithHours(
-        dateFns.endOfDay(dateFns.addDays(courseEndDate, 14)),
-      )
+    const opensAt = formatDate(courseEndDate)
+    const closesAtWithoutTimeZone = formatWithHours(
+      dateFns.endOfDay(dateFns.addDays(courseEndDate, 14)),
+    )
 
-      const closesAt = parseFromTimeZone(closesAtWithoutTimeZone, {
-        timeZone: 'Europe/Helsinki',
-      })
+    const closesAt = parseFromTimeZone(closesAtWithoutTimeZone, {
+      timeZone: 'Europe/Helsinki',
+    })
 
-      const targets = [
-        {
-          feedbackType: 'courseRealisation',
-          typeId: course.id,
-          courseUnitId: courseUnit.id,
-          courseRealisationId: course.id,
-          name: commonFeedbackName,
-          hidden: false,
-          opensAt,
-          closesAt,
-        },
-      ]
-      course.studyGroupSets.forEach((studyGroupSet) =>
-        studyGroupSet.studySubGroups.forEach((subGroup) => {
-          targets.push({
-            feedbackType: 'studySubGroup',
-            typeId: subGroup.id,
-            courseUnitId: courseUnit.id,
-            courseRealisationId: course.id,
-            name: combineStudyGroupName(studyGroupSet.name, subGroup.name),
-            hidden: true,
-            opensAt,
-            closesAt,
-          })
-        }),
-      )
-      return targets
-    }),
-  )
+    return {
+      feedbackType: 'courseRealisation',
+      typeId: course.id,
+      courseUnitId: courseUnit.id,
+      courseRealisationId: course.id,
+      name: commonFeedbackName,
+      hidden: false,
+      opensAt,
+      closesAt,
+    }
+  })
 
   const existingCourseUnits = await CourseUnit.findAll({
     where: {
@@ -462,8 +443,8 @@ const createFeedbackTargets = async (courses) => {
         ({ id: feedbackTargetId, courseRealisationId }) =>
           courseIdToPersonIds[courseRealisationId].map(
             ({ personId, roleUrn }) => ({
-              feedback_target_id: feedbackTargetId,
-              user_id: personId,
+              feedbackTargetId,
+              userId: personId,
               accessStatus: responsibleTeacherUrns.includes(roleUrn)
                 ? 'RESPONSIBLE_TEACHER'
                 : 'TEACHER',
