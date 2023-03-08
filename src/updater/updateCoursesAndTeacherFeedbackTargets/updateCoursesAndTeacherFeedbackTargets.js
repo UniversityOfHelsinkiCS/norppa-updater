@@ -212,7 +212,7 @@ const sortAccessStatus = (a, b) => {
 const createStudyGroups = async (feedbackTargets, courses) => {
   const groups = []
 
-  feedbackTargets.forEach((fbt, i) => {
+  feedbackTargets.forEach((fbt) => {
     const courseRealisationData = courses.find(c => c.id === fbt.dataValues.typeId)
     if (!courseRealisationData) return
     const { studyGroupSets } = courseRealisationData
@@ -550,24 +550,24 @@ const updateCoursesAndTeacherFeedbackTargets = async () => {
 
   // HOW ITS DONE HERE SUCKS LOL. Everything is fetched 3 times, literally torturing importer. FIX PLS
 
-  //await mangleData(
-  //  'course_unit_realisations_with_course_units',
-  //  SPEED,
-  //  courseUnitHandler,
-  //)
-  //await mangleData(
-  //  'course_unit_realisations_with_course_units',
-  //  SPEED,
-  //  openCourseUnitHandler,
-  //)
-//
-  //// Delete all teacher rights once a week (saturday-sunday night)
-  //if (new Date().getDay() === 0) {
-  //  logger.info('[UPDATER] Deleting teacher rights', {})
-  //  await sequelize.query(
-  //    `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL AND is_teacher(access_status) AND user_id != 'abc1234'`,
-  //  )
-  //}
+  await mangleData(
+    'course_unit_realisations_with_course_units',
+    SPEED,
+    courseUnitHandler,
+  )
+  await mangleData(
+    'course_unit_realisations_with_course_units',
+    SPEED,
+    openCourseUnitHandler,
+  )
+
+  // Delete all teacher rights once a week (saturday-sunday night)
+  if (new Date().getDay() === 0) {
+    logger.info('[UPDATER] Deleting teacher rights', {})
+    await sequelize.query(
+      `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL AND is_teacher(access_status) AND user_id != 'abc1234'`,
+    )
+  }
 
   await mangleData(
     'course_unit_realisations_with_course_units',
