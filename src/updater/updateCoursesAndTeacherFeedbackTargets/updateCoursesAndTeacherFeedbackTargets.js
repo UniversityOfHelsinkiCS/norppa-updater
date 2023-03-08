@@ -23,6 +23,7 @@ const { sequelize } = require('../../db/dbConnection')
 const { safeBulkCreate } = require('../util')
 const { createCourseRealisations, createInactiveCourseRealisations } = require('./createCourseRealisations')
 const { formatDate, formatWithHours } = require('./utils')
+const { createStudyGroups } = require('./createStudyGroups')
 
 const validRealisationTypes = [
   'urn:code:course-unit-realisation-type:teaching-participation-lab',
@@ -209,38 +210,6 @@ const sortAccessStatus = (a, b) => {
   return 0
 }
 
-const createStudyGroups = async (feedbackTargets, courses) => {
-  const groups = []
-
-  feedbackTargets.forEach((fbt) => {
-    const courseRealisationData = courses.find(c => c.id === fbt.dataValues.typeId)
-    if (!courseRealisationData) return
-    const { studyGroupSets } = courseRealisationData
-
-    for (const { studySubGroups } of studyGroupSets) {
-
-      // Create groups only when more than 1 sub group.
-      if (!studySubGroups?.length > 1) return
-      
-      groups.push(...studySubGroups.map(ssg => ({
-        id: ssg.id,
-        feedbackTargetId: fbt.id,
-        name: ssg.name,
-      })))
-    }
-  })
-
-  await safeBulkCreate({
-    entityName: "Group",
-    entities: groups,
-    bulkCreate: async (e, opts) => Group.bulkCreate(e, opts),
-    fallbackCreate: async (e, opts) => Group.create(e, opts),
-    options: {
-      updateOnDuplicate: ['name'],
-    },
-  })
-}
-
 const createFeedbackTargets = async (courses) => {
   const courseIdToPersonIds = {}
 
@@ -333,7 +302,7 @@ const createFeedbackTargets = async (courses) => {
     feedbackTargetsWithoutEditedWithIds,
   )
 
-  await createStudyGroups(feedbackTargetsWithIds, courses)
+  const teacherGroups = await createStudyGroups(feedbackTargetsWithIds, courses)
 
   const userFeedbackTargets = []
     .concat(
@@ -343,6 +312,7 @@ const createFeedbackTargets = async (courses) => {
             ({ personId, roleUrn }) => ({
               feedbackTargetId,
               userId: personId,
+              groupIds: teacherGroups[personId], // Its allowed to be null
               accessStatus: responsibleTeacherUrns.includes(roleUrn)
                 ? 'RESPONSIBLE_TEACHER'
                 : 'TEACHER',
@@ -351,15 +321,17 @@ const createFeedbackTargets = async (courses) => {
           ),
       ),
     )
-    .filter((target) => target.user_id && target.feedback_target_id)
+    .filter((target) => target.userId && target.feedbackTargetId)
     .sort(sortAccessStatus)
+  
+  const uniqueUfbts = _.uniqBy(userFeedbackTargets, ufbt => `${ufbt.userId}${ufbt.feedbackTargetId}`)
 
   await safeBulkCreate({
     entityName: 'UserFeedbackTarget',
-    entities: userFeedbackTargets,
+    entities: uniqueUfbts,
     bulkCreate: async (e, opts) => UserFeedbackTarget.bulkCreate(e, opts),
     fallbackCreate: async (e, opts) => UserFeedbackTarget.create(e, opts),
-    options: { ignoreDuplicates: true },
+    options: { updateOnDuplicate: ["groupIds", "accessStatus", "isAdministrativePerson"] },
   })
 }
 
