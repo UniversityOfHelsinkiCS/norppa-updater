@@ -53,15 +53,6 @@ const commonFeedbackName = {
   sv: 'Allmän respons om kursen',
 }
 
-const combineStudyGroupName = (firstPart, secondPart) => ({
-  fi:
-    firstPart.fi && secondPart.fi ? `${firstPart.fi}: ${secondPart.fi}` : null,
-  en:
-    firstPart.en && secondPart.en ? `${firstPart.en}: ${secondPart.en}` : null,
-  sv:
-    firstPart.sv && secondPart.sv ? `${firstPart.sv}: ${secondPart.sv}` : null,
-})
-
 const findMatchingCourseUnit = async (course) => {
   try {
     const nonOpenCourse = await CourseUnit.findOne({
@@ -270,25 +261,20 @@ const createCourseRealisations = async (courseRealisations) => {
     })
   }
 
-  const courseRealisationsOrganisations = [].concat(
-    ...courseRealisations.map(({ id, organisations }) =>
-      organisations
-        .filter(({ share }) => share !== 0)
-        .sort((a, b) => b.share - a.share)
-        .map(({ organisationId }, index) => ({
-          type: index === 0 ? 'PRIMARY' : 'DIRECT',
-          courseRealisationId: id,
-          organisationId,
-        })),
-    ),
+  const courseRealisationsOrganisations = courseRealisations.flatMap(({ id, organisations }) =>
+    organisations
+      .filter(({ share, organisationId }) => share > 0 && organisationId !== null)
+      .sort((a, b) => b.share - a.share)
+      .map(({ organisationId }, index) => ({
+        type: index === 0 ? 'PRIMARY' : 'DIRECT',
+        courseRealisationId: id,
+        organisationId,
+      })),
   )
-
-  const filteredCourseRealisationOrganisations =
-    courseRealisationsOrganisations.filter((c) => c.organisationId !== null)
 
   await safeBulkCreate({
     entityName: 'CourseRealisationsOrganisation',
-    entities: filteredCourseRealisationOrganisations,
+    entities: courseRealisationsOrganisations,
     bulkCreate: async (entities, opt) =>
       CourseRealisationsOrganisation.bulkCreate(entities, opt),
     fallbackCreate: async (entity, opt) =>
