@@ -21,6 +21,8 @@ const logger = require('../../util/logger')
 const mangleData = require('../mangleData')
 const { sequelize } = require('../../db/dbConnection')
 const { safeBulkCreate } = require('../util')
+const { createCourseRealisations, createInactiveCourseRealisations } = require('./createCourseRealisations')
+const { formatDate, formatWithHours } = require('./utils')
 
 const validRealisationTypes = [
   'urn:code:course-unit-realisation-type:teaching-participation-lab',
@@ -43,9 +45,6 @@ const responsibleTeacherUrns = [
   'urn:code:course-unit-realisation-responsibility-info-type:contact-info',
   administrativePersonUrn,
 ]
-
-const formatDate = (date) => dateFns.format(date, 'yyyy-MM-dd')
-const formatWithHours = (date) => dateFns.format(date, 'yyyy-MM-dd HH:mm:ss')
 
 const commonFeedbackName = {
   fi: 'Yleinen palaute kurssista',
@@ -178,128 +177,6 @@ const createCourseUnits = async (courseUnits) => {
       CourseUnitsOrganisation.create(entity, opt),
     options: { ignoreDuplicates: true },
   })
-}
-
-const getCourseRealisationPeriod = (activityPeriod) => {
-  const { startDate, endDate } = activityPeriod
-
-  const formattedEndDate = endDate
-    ? formatWithHours(
-        dateFns.add(dateFns.subDays(new Date(endDate), 1), {
-          hours: 23,
-          minutes: 59,
-        }),
-      )
-    : null
-
-  return {
-    startDate,
-    endDate: endDate
-      ? parseFromTimeZone(formattedEndDate, { timeZone: 'Europe/Helsinki' })
-      : null,
-  }
-}
-
-const getEducationalInstitutionUrn = (organisations) => {
-  const urns = new Set()
-
-  organisations.forEach((organisation) => {
-    if (
-      organisation.roleUrn ===
-        'urn:code:organisation-role:coordinating-organisation' &&
-      organisation.educationalInstitutionUrn
-    ) {
-      urns.add(organisation.educationalInstitutionUrn)
-    }
-  })
-
-  if (urns.size > 1) {
-    logger.info('More than one org', {})
-  }
-
-  return urns.values().next().value // Yes wtf
-}
-
-const isMoocCourse = (customCodeUrns) => {
-  if (!customCodeUrns) return false
-  if (!customCodeUrns['urn:code:custom:hy-university-root-id:opintotarjonta'])
-    return false
-  return customCodeUrns[
-    'urn:code:custom:hy-university-root-id:opintotarjonta'
-  ].includes('urn:code:custom:hy-university-root-id:opintotarjonta:mooc')
-}
-
-const getTeachingLanguages = (customCodeUrns) => {
-  if (!customCodeUrns) return null
-  if (!customCodeUrns['urn:code:custom:hy-university-root-id:opetuskielet'])
-    return null
-
-  const languages = customCodeUrns[
-    'urn:code:custom:hy-university-root-id:opetuskielet'
-  ].map((urn) => urn.slice(-2))
-
-  if (languages.length === 0) return null
-
-  return languages
-}
-
-const createCourseRealisations = async (courseRealisations) => {
-  for (const {
-    id,
-    name,
-    activityPeriod,
-    organisations,
-    customCodeUrns,
-  } of courseRealisations) {
-    await CourseRealisation.upsert({
-      id,
-      name,
-      ...getCourseRealisationPeriod(activityPeriod),
-      educationalInstitutionUrn: getEducationalInstitutionUrn(organisations),
-      isMoocCourse: isMoocCourse(customCodeUrns),
-      teachingLanguages: getTeachingLanguages(customCodeUrns),
-    })
-  }
-
-  const courseRealisationsOrganisations = courseRealisations.flatMap(({ id, organisations }) =>
-    organisations
-      .filter(({ share, organisationId }) => share > 0 && organisationId !== null)
-      .sort((a, b) => b.share - a.share)
-      .map(({ organisationId }, index) => ({
-        type: index === 0 ? 'PRIMARY' : 'DIRECT',
-        courseRealisationId: id,
-        organisationId,
-      })),
-  )
-
-  await safeBulkCreate({
-    entityName: 'CourseRealisationsOrganisation',
-    entities: courseRealisationsOrganisations,
-    bulkCreate: async (entities, opt) =>
-      CourseRealisationsOrganisation.bulkCreate(entities, opt),
-    fallbackCreate: async (entity, opt) =>
-      CourseRealisationsOrganisation.create(entity, opt),
-    options: { ignoreDuplicates: true },
-  })
-}
-
-const createInactiveCourseRealisations = async (inactiveCourseRealisations) => {
-  for (const {
-    id,
-    name,
-    activityPeriod,
-    organisations,
-    customCodeUrns,
-  } of inactiveCourseRealisations) {
-    await InactiveCourseRealisation.upsert({
-      id,
-      name,
-      ...getCourseRealisationPeriod(activityPeriod),
-      educationalInstitutionUrn: getEducationalInstitutionUrn(organisations),
-      isMoocCourse: isMoocCourse(customCodeUrns),
-      teachingLanguages: getTeachingLanguages(customCodeUrns),
-    })
-  }
 }
 
 const getIncludeCurs = async () => {
@@ -673,24 +550,24 @@ const updateCoursesAndTeacherFeedbackTargets = async () => {
 
   // HOW ITS DONE HERE SUCKS LOL. Everything is fetched 3 times, literally torturing importer. FIX PLS
 
-  await mangleData(
-    'course_unit_realisations_with_course_units',
-    SPEED,
-    courseUnitHandler,
-  )
-  await mangleData(
-    'course_unit_realisations_with_course_units',
-    SPEED,
-    openCourseUnitHandler,
-  )
-
-  // Delete all teacher rights once a week (saturday-sunday night)
-  if (new Date().getDay() === 0) {
-    logger.info('[UPDATER] Deleting teacher rights', {})
-    await sequelize.query(
-      `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL AND is_teacher(access_status) AND user_id != 'abc1234'`,
-    )
-  }
+  //await mangleData(
+  //  'course_unit_realisations_with_course_units',
+  //  SPEED,
+  //  courseUnitHandler,
+  //)
+  //await mangleData(
+  //  'course_unit_realisations_with_course_units',
+  //  SPEED,
+  //  openCourseUnitHandler,
+  //)
+//
+  //// Delete all teacher rights once a week (saturday-sunday night)
+  //if (new Date().getDay() === 0) {
+  //  logger.info('[UPDATER] Deleting teacher rights', {})
+  //  await sequelize.query(
+  //    `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL AND is_teacher(access_status) AND user_id != 'abc1234'`,
+  //  )
+  //}
 
   await mangleData(
     'course_unit_realisations_with_course_units',
