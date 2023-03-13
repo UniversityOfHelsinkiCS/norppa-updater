@@ -1,4 +1,3 @@
-const { Op } = require('sequelize')
 const { subHours } = require('date-fns')
 
 const { sequelize } = require('../db/dbConnection')
@@ -12,47 +11,38 @@ const createEnrolmentTargets = async (enrolment) => {
   const {
     personId: userId,
     courseUnitRealisationId,
-    studySubGroups,
+    confirmedStudySubGroupIds,
   } = enrolment
 
-  const subGroupIds = studySubGroups.map((group) => group.studySubGroupId)
-  const subGroupFeedbackTargets = await FeedbackTarget.findAll({
+  const feedbackTargets = await FeedbackTarget.findAll({
     where: {
-      [Op.or]: [
-        {
-          feedbackType: 'studySubGroup',
-          typeId: {
-            [Op.in]: subGroupIds,
-          },
-        },
-        {
-          feedbackType: 'courseRealisation',
-          typeId: courseUnitRealisationId,
-        },
-      ],
+      feedbackType: 'courseRealisation',
+      typeId: courseUnitRealisationId,
     },
   })
-  const subGroupTargets = subGroupFeedbackTargets.map((feedbackTarget) => ({
+  const userFeedbackTargets = feedbackTargets.map((feedbackTarget) => ({
     accessStatus: 'STUDENT',
     userId,
     feedbackTargetId: feedbackTarget.id,
+    groupIds: confirmedStudySubGroupIds.length > 0 ? confirmedStudySubGroupIds : null // sequelize doesnt like empty arrays for some reason
   }))
-  return subGroupTargets
+  return userFeedbackTargets
 }
 
 const bulkCreateUserFeedbackTargets = async (userFeedbackTargets) => {
   const normalizedUserFeedbackTargets = userFeedbackTargets
-    .map(({ userId, feedbackTargetId, accessStatus }) => ({
-      user_id: userId,
-      feedback_target_id: feedbackTargetId,
+    .map(({ userId, feedbackTargetId, accessStatus, groupIds }) => ({
+      userId,
+      feedbackTargetId,
       accessStatus,
+      groupIds,
     }))
-    .filter((target) => target.user_id && target.feedback_target_id)
+    .filter((target) => target.userId && target.feedbackTargetId)
 
   const ufbts = await UserFeedbackTarget.bulkCreate(
     normalizedUserFeedbackTargets,
     {
-      ignoreDuplicates: true,
+      updateOnDuplicate: ['groupIds']
     },
   )
   return ufbts.length
@@ -73,7 +63,7 @@ const enrolmentsHandler = async (enrolments) => {
       `[UPDATER] RUNNING ${userFeedbackTargets.length} TARGETS ONE BY ONE`,
     )
     for (const ufbt of userFeedbackTargets) {
-      const { userId, feedbackTargetId, accessStatus } = ufbt
+      const { userId, feedbackTargetId, accessStatus, groupIds } = ufbt
       try {
         await UserFeedbackTarget.findOrCreate({
           where: {
@@ -81,9 +71,10 @@ const enrolmentsHandler = async (enrolments) => {
             feedbackTargetId,
           },
           defaults: {
-            user_id: userId,
-            feedback_target_id: feedbackTargetId,
+            userId,
+            feedbackTargetId,
             accessStatus,
+            groupIds,
           },
         })
         count += 1
