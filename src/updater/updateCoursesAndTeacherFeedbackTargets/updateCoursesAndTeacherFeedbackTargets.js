@@ -400,16 +400,6 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
 
   logger.info(`Destroyed ${destroyedFeedbackTargetLogs} logs`)
 
-  const destroyedFeedbackTargets = await FeedbackTarget.unscoped().destroy({
-    where: {
-      id: {
-        [Op.in]: feedbackTargetIds,
-      },
-    },
-  })
-
-  logger.info(`Destroyed ${destroyedFeedbackTargets} feedback targets`)
-
   const destroyedGroups = await Group.destroy({
     where: {
       feedbackTargetId: {
@@ -419,6 +409,16 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
   })
 
   logger.info(`Destroyed ${destroyedGroups} groups`)
+
+  const destroyedFeedbackTargets = await FeedbackTarget.unscoped().destroy({
+    where: {
+      id: {
+        [Op.in]: feedbackTargetIds,
+      },
+    },
+  })
+
+  logger.info(`Destroyed ${destroyedFeedbackTargets} feedback targets`)
 
   const destroyedCourseRealisationOrganisations =
     await CourseRealisationsOrganisation.destroy({
