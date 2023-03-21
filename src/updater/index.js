@@ -70,7 +70,7 @@ const run = async () => {
 const start = async () => {
   if (!(inProduction || inStaging)) {
     logger.info('Starting development updater run')
-    run()
+    // run()
     return
   }
   logger.info('Setup cron job')
