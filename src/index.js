@@ -2,6 +2,7 @@ const express = require('express')
 const Sentry = require('@sentry/node')
 
 const { connectToDatabase } = require('./db/dbConnection')
+const { initializeFunctions } = require('./db/postgresFunctions')
 const { updater } = require('./updater')
 const {
   updateEnrolmentsOfCourse,
@@ -49,6 +50,7 @@ app.use(Sentry.Handlers.errorHandler())
 
 const start = async () => {
   await connectToDatabase()
+  await initializeFunctions()
   await updater.checkStatusOnStartup()
   await updater.start()
   await startEnrolmentsCron()
