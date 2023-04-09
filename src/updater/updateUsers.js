@@ -2,20 +2,20 @@ const { User } = require('../models')
 const mangleData = require('./mangleData')
 const { safeBulkCreate } = require('./util')
 
+const parsePreferredLanguageUrnToLanguage = (urn) => {
+  const fallBackLanguage = 'en'
+  if (!urn) return fallBackLanguage
+  const possibleLanguages = ['fi', 'en', 'sv']
+  const splitArray = urn.split(':')
+  const language = splitArray[splitArray.length - 1]
+  return possibleLanguages.includes(language) ? language : fallBackLanguage
+}
+
+const getFirstName = ({ callName, firstNames }) =>
+  callName || (firstNames ? firstNames.split(' ')[0] : null)
+
 const usersHandler = async (users) => {
-  const parsePreferredLanguageUrnToLanguage = (urn) => {
-    const fallBackLanguage = 'en'
-    if (!urn) return fallBackLanguage
-    const possibleLanguages = ['fi', 'en', 'sv']
-    const splitArray = urn.split(':')
-    const language = splitArray[splitArray.length - 1]
-    return possibleLanguages.includes(language) ? language : fallBackLanguage
-  }
-
-  const getFirstName = ({ callName, firstNames }) =>
-    callName || (firstNames ? firstNames.split(' ')[0] : null)
-
-  const filteredUsers = users.map((user) => ({
+  const parsedUsers = users.map((user) => ({
     ...user,
     email: user.primaryEmail ? user.primaryEmail : user.secondaryEmail,
     secondaryEmail: user.primaryEmail ? user.secondaryEmail : null,
@@ -30,7 +30,7 @@ const usersHandler = async (users) => {
   // By default updates all fields on duplicate id
   await safeBulkCreate({
     entityName: 'User',
-    entities: filteredUsers,
+    entities: parsedUsers,
     bulkCreate: async (e, opt) => User.bulkCreate(e, opt),
     fallbackCreate: async (e, opt) => User.create(e, opt),
     options: {
@@ -50,7 +50,7 @@ const usersHandler = async (users) => {
 }
 
 const updateUsers = async () => {
-  await mangleData('persons', 4000, usersHandler)
+  await mangleData('persons', 2000, usersHandler)
 }
 
 module.exports = updateUsers

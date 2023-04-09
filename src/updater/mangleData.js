@@ -5,6 +5,11 @@ const Sentry = require('@sentry/node')
 const logger = require('../util/logger')
 const { fetchData } = require('./importerClient')
 
+const logError = (message, error) => {
+  logger.error(`[UPDATER] ${message} ${error.name}, ${error.message}`)
+  Sentry.captureException(error)
+}
+
 /**
  * If a single update category takes over an hour, something is probably wrong
  * Stop Updater from running indefinitely, crashing Norppa and messing up logs
@@ -44,7 +49,15 @@ const mangleData = async (url, limit, handler) => {
    */
   while (checkTimeout(start)) {
     try {
-      currentData = await nextData
+      
+      try {
+        currentData = await nextData
+      } catch (e) {
+        logError('Updaterloop fetch error:', e)
+        e.isLogged = true
+        throw e
+      }
+
       if (currentData?.length === 0) break
 
       const requestTime = (Date.now() - requestStart).toFixed(0)
@@ -56,7 +69,13 @@ const mangleData = async (url, limit, handler) => {
 
       const processingStart = Date.now()
 
-      await handler(currentData)
+      try {
+        await handler(currentData)
+      } catch (e) {
+        logError('Updaterloop handler error:', e)
+        e.isLogged = true
+        throw e
+      }
 
       const processingTime = (Date.now() - processingStart).toFixed(0)
       const totalTime = (Date.now() - loopStart).toFixed(0)
@@ -72,10 +91,11 @@ const mangleData = async (url, limit, handler) => {
 
       count += currentData.length
       offset += limit
+      
     } catch (e) {
-      logger.info('[UPDATER] ERROR:')
-      logger.error(e)
-      Sentry.captureException(e)
+      if (!e.isLogged) {
+        logError('Unknown updaterloop error:', e)
+      }
     }
   }
 
