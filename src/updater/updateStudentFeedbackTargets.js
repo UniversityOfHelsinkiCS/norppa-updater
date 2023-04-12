@@ -194,7 +194,7 @@ const updateNewEnrolments = async () => {
         0,
       )} ms`,
     )
-    return 0
+    throw error
   }
 }
 
