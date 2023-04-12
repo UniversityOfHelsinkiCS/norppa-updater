@@ -109,7 +109,7 @@ const updateEnrolmentsOfCourse = async (courseRealisationId) => {
   const start = Date.now()
   try {
     const { data: enrolments } = await fetchData(
-      `/enrolments/${courseRealisationId}`,
+      `enrolments/${courseRealisationId}`,
     )
     await enrolmentsHandler(enrolments)
     const end = Date.now()
@@ -173,7 +173,7 @@ const updateNewEnrolments = async () => {
   const start = new Date()
   const twoHoursAgo = subHours(start, 2)
   try {
-    const { data: enrolments } = await fetchData(`/enrolments-new`, {
+    const { data: enrolments } = await fetchData(`enrolments-new`, {
       since: twoHoursAgo,
     })
     const count = await saveNewEnrolments(enrolments)
