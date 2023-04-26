@@ -173,7 +173,7 @@ const updateNewEnrolments = async () => {
   const start = new Date()
   const twoHoursAgo = subHours(start, 2)
   try {
-    const { data: enrolments } = await fetchData(`enrolments-new`, {
+    const enrolments = await fetchData(`enrolments-new`, {
       since: twoHoursAgo,
     }, (data) => Array.isArray(data))
 
