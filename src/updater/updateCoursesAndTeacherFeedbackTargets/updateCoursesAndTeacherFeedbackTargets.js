@@ -35,8 +35,10 @@ const validRealisationTypes = [
   'urn:code:course-unit-realisation-type:teaching-participation-seminar',
 ]
 
-const independentWorkUrn =
-  'urn:code:course-unit-realisation-type:independent-work-project'
+const inactiveRealisationTypes = [
+  'urn:code:course-unit-realisation-type:independent-work-project',
+  'urn:code:course-unit-realisation-type:independent-work-essay',
+]
 
 const administrativePersonUrn =
   'urn:code:course-unit-realisation-responsibility-info-type:administrative-person'
@@ -481,14 +483,14 @@ const coursesHandler = async (courses) => {
     await deleteCancelledCourses(cancelledCourseIds)
   }
 
-  const independentWorkCourses = courses.filter(
+  const inactiveCourseRealisations = courses.filter(
     (course) =>
       course.courseUnits.length &&
-      course.courseUnitRealisationTypeUrn === independentWorkUrn &&
+      inactiveRealisationTypes.includes(course.courseUnitRealisationTypeUrn) &&
       course.flowState !== 'CANCELLED',
   )
 
-  await createInactiveCourseRealisations(independentWorkCourses)
+  await createInactiveCourseRealisations(inactiveCourseRealisations)
 }
 
 const courseUnitHandler = async (courseRealisations) => {
