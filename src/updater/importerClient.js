@@ -10,7 +10,9 @@ const importerClient = axios.create({
   },
 })
 
-const fetchData = async (url, params) => {
+const defaultValidator = () => true
+
+const fetchData = async (url, params, validator = defaultValidator) => {
   const { data } = await importerClient.get(`palaute/updater/${url}`, {
     params,
   })
@@ -21,6 +23,10 @@ const fetchData = async (url, params) => {
     logger.info(`[UPDATER] Importer told me to wait ${waitTime}ms before retrying`)
     await new Promise((resolve) => { setTimeout(resolve, waitTime) })
     return fetchData(url, params)
+  }
+
+  if (!validator(data)) {
+    throw new Error(`[UPDATER] Invalid data received from importer: ${JSON.stringify(data)}`)
   }
 
   return data

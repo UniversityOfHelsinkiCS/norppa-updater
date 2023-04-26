@@ -175,7 +175,8 @@ const updateNewEnrolments = async () => {
   try {
     const { data: enrolments } = await fetchData(`enrolments-new`, {
       since: twoHoursAgo,
-    })
+    }, (data) => Array.isArray(data))
+
     const count = await saveNewEnrolments(enrolments)
     const end = Date.now()
     logger.info(
