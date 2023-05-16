@@ -212,6 +212,15 @@ const sortAccessStatus = (a, b) => {
   return 0
 }
 
+const getAccessStatus = (roleUrn, courseRealisation) => {
+  const { startDate } = courseRealisation.activityPeriod
+
+  // All teachers have responsible teacher access before 2023
+  if (startDate < '2023-01-01') return 'RESPONSIBLE_TEACHER'
+
+  return responsibleTeacherUrns.includes(roleUrn) ? 'RESPONSIBLE_TEACHER' : 'TEACHER'
+}
+
 const createFeedbackTargets = async (courses) => {
   const courseIdToPersonIds = {}
 
@@ -315,9 +324,7 @@ const createFeedbackTargets = async (courses) => {
               feedbackTargetId,
               userId: personId,
               groupIds: teacherGroups[personId], // Its allowed to be null
-              accessStatus: responsibleTeacherUrns.includes(roleUrn)
-                ? 'RESPONSIBLE_TEACHER'
-                : 'TEACHER',
+              accessStatus: getAccessStatus(roleUrn, courses.find(({ id }) => id === courseRealisationId)),
               isAdministrativePerson: roleUrn === administrativePersonUrn,
             }),
           ),
@@ -536,7 +543,7 @@ const updateCoursesAndTeacherFeedbackTargets = async () => {
   )
 
   // Delete all teacher rights once a week (saturday-sunday night)
-  if (new Date().getDay() === 0) {
+  if (/* new Date().getDay() === 0 */ true) {
     logger.info('[UPDATER] Deleting teacher rights', {})
     await sequelize.query(
       `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL AND is_teacher(access_status) AND user_id != 'abc1234'`,
