@@ -10,7 +10,7 @@ const getCourseRealisationPeriod = (activityPeriod) => {
 
   const formattedEndDate = endDate
     ? formatWithHours(
-        dateFns.add(dateFns.subDays(new Date(endDate), 1), {
+        dateFns.add(dateFns.subDays(dateFns.parseISO(endDate), 1), {
           hours: 23,
           minutes: 59,
         }),
