@@ -2,14 +2,14 @@ const Sequelize = require('sequelize')
 const Umzug = require('umzug')
 const logger = require('../util/logger')
 const {
-  DB_CONNECTION_STRING,
+  DATABASE_URL,
   inStaging,
   inProduction,
 } = require('../util/config')
 
 const DB_CONNECTION_RETRY_LIMIT = 10
 
-const sequelize = new Sequelize(DB_CONNECTION_STRING, { logging: false })
+const sequelize = new Sequelize(DATABASE_URL, { logging: false })
 
 const runMigrations = async () => {
   const migrator = new Umzug({

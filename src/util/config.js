@@ -15,9 +15,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development'
 
 const IMPORTER_API_URL = process.env.IMPORTER_API_URL || ''
 
-let DB_CONNECTION_STRING = `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:5432/${process.env.POSTGRES_DATABASE}?targetServerType=primary`
-
-if (inStaging) DB_CONNECTION_STRING = `${DB_CONNECTION_STRING}&ssl=true`
+const DATABASE_URL = process.env.DATABASE_URL ||''
 
 const ADMINS = ['mluukkai', 'ttiittan', 'kurhila', 'vesuvesu', 'kemiko']
 
@@ -27,7 +25,7 @@ module.exports = {
   inStaging,
   basePath,
   GIT_SHA,
-  DB_CONNECTION_STRING,
+  DATABASE_URL,
   PORT,
   NODE_ENV,
   API_TOKEN,
