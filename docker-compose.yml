@@ -9,10 +9,7 @@ services:
     volumes:
       - ./:/usr/src/app
     environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DATABASE=postgres
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
     ports:
       - 8000:3000
     container_name: updater-dev
