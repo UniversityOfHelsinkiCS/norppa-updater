@@ -41,6 +41,7 @@ const validRealisationTypes = [
 const inactiveRealisationTypes = [
   'urn:code:course-unit-realisation-type:independent-work-project',
   'urn:code:course-unit-realisation-type:independent-work-essay',
+  'urn:code:course-unit-realisation-type:training-training',
 ]
 
 const administrativePersonUrn =
