@@ -216,6 +216,23 @@ const sortAccessStatus = (a, b) => {
   return 0
 }
 
+const getCourseUnit = ({ activityPeriod, courseUnits }) => {
+  const { startDate: realisationStartDate, endDate: realisationEndDate } = activityPeriod
+
+  const courseUnit = courseUnits.find(({ validityPeriod }) => {
+    const { startDate, endDate } = validityPeriod
+
+    if (!startDate || !endDate) return false
+
+    return (
+      dateFns.isBefore(new Date(realisationStartDate), new Date(endDate)) &&
+      dateFns.isAfter(new Date(realisationEndDate), new Date(startDate))
+    )
+  })
+
+  return courseUnit ?? courseUnits[0]
+}
+
 const getAccessStatus = (roleUrn, courseRealisation) => {
   const { startDate } = courseRealisation.activityPeriod
 
@@ -233,7 +250,8 @@ const createFeedbackTargets = async (courses) => {
       .filter(({ personId }) => personId)
       .map(({ personId, roleUrn }) => ({ personId, roleUrn }))
 
-    const courseUnit = course.courseUnits[0]
+    const courseUnit = getCourseUnit(course)
+
     const courseEndDate = dateFns.endOfDay(
       new Date(course.activityPeriod.endDate),
     )
