@@ -256,7 +256,12 @@ const createFeedbackTargets = async (courses) => {
       new Date(course.activityPeriod.endDate),
     )
 
-    const opensAt = formatDate(courseEndDate)
+    const opensAtWithoutTimeZone = formatWithHours(dateFns.startOfDay(courseEndDate))
+
+    const opensAt = parseFromTimeZone(opensAtWithoutTimeZone, {
+      timeZone: 'Europe/Helsinki',
+    })
+
     const closesAtWithoutTimeZone = formatWithHours(
       dateFns.endOfDay(dateFns.addDays(courseEndDate, 14)),
     )
