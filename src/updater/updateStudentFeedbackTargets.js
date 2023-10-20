@@ -98,7 +98,8 @@ const updateStudentFeedbackTargets = async () => {
     await sequelize.query(
       `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL
        AND access_status = 'STUDENT'
-       AND feedback_open_email_sent = false`,
+       AND feedback_open_email_sent = false
+       AND user_created = false`,
     )
   }
 
