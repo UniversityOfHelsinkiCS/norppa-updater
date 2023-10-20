@@ -1,5 +1,3 @@
-
-
 module.exports = {
   up: async () => {
     try {
@@ -7,7 +5,7 @@ module.exports = {
       await initialiseSummaryView()
       await initialiseCountsView()
     } catch (error) {
-      console.error("Failed to initialize summary mat views: ", error?.message)
+      console.error('Failed to initialize summary mat views: ', error?.message)
     }
   },
   down: async queryInterface => {

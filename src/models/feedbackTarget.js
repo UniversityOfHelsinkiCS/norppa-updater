@@ -164,6 +164,9 @@ class FeedbackTarget extends Model {
       publicityConfigurableQuestionIds,
     }
 
+    // Do not accidentally send this to client
+    delete feedbackTarget.userFeedbackTargets
+
     return feedbackTarget
   }
 
@@ -369,6 +372,11 @@ FeedbackTarget.init(
       },
     },
     sendContinuousFeedbackDigestEmail: {
+      type: BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    userCreated: {
       type: BOOLEAN,
       allowNull: false,
       defaultValue: false,
