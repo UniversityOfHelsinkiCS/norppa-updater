@@ -102,8 +102,12 @@ const updateStudentFeedbackTargets = async () => {
        AND user_created = false`,
     )
   }
+  // fetch max two years old data
+  
+  const getDataSince = new Date()
+  getDataSince.setFullYear(getDataSince.getFullYear() - 2)
 
-  await mangleData('enrolments', 1000, enrolmentsHandler)
+  await mangleData('enrolments', 1000, enrolmentsHandler, getDataSince)
 }
 
 const updateEnrolmentsOfCourse = async (courseRealisationId) => {

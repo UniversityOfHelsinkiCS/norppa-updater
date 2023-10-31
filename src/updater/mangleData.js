@@ -27,8 +27,9 @@ const checkTimeout = (start) => {
  * @param {string} url the Importer palaute endpoint to call
  * @param {number} limit number of entities in one batch
  * @param {(data: object[]) => Promise<void>} handler handler function to mangel and store entities in db
+ * @param {Date} since date since the data is to be fetched
  */
-const mangleData = async (url, limit, handler) => {
+const mangleData = async (url, limit, handler, since = null) => {
   logger.info(`[UPDATER] Starting to update items with url ${url}`)
   const start = Date.now()
   let requestStart = null
@@ -63,7 +64,7 @@ const mangleData = async (url, limit, handler) => {
       const requestTime = (Date.now() - requestStart).toFixed(0)
       requestStart = Date.now()
 
-      nextData = fetchData(url, { limit, offset })
+      nextData = fetchData(url, { limit, offset, since })
 
       if (!currentData) continue // first iteration
 
