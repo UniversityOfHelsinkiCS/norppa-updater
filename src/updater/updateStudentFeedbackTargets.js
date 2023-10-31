@@ -91,21 +91,29 @@ const enrolmentsHandler = async (enrolments) => {
 }
 
 const updateStudentFeedbackTargets = async () => {
+  // Date from onwards the fbts are to be updated
+  const getDataSince = new Date()
+  getDataSince.setFullYear(getDataSince.getFullYear() - 2)
+
   // Delete all old enrolments once a week sunday-monday night.
   // Delete only enrollments, not teacher relations
   if (new Date().getDay() === 1) {
     logger.info('[UPDATER] Deleting old enrolments', {})
-    await sequelize.query(
-      `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL
-       AND access_status = 'STUDENT'
-       AND feedback_open_email_sent = false
-       AND user_created = false`,
+    const [_, {rowCount}] = await sequelize.query(
+      `DELETE
+        FROM user_feedback_targets ufbt
+        USING feedback_targets fbt
+      WHERE ufbt.feedback_target_id = fbt.id
+        AND feedback_id IS NULL
+        AND access_status = 'STUDENT'
+        AND feedback_open_email_sent = false
+        AND fbt.user_created = false
+        AND fbt.closes_at >= '${getDataSince.toISOString()}'::date
+      `,
     )
+
+    console.log(`DELETED ${rowCount} student feedback targets`)
   }
-  // fetch max two years old data
-  
-  const getDataSince = new Date()
-  getDataSince.setFullYear(getDataSince.getFullYear() - 2)
 
   await mangleData('enrolments', 1000, enrolmentsHandler, getDataSince)
 }
