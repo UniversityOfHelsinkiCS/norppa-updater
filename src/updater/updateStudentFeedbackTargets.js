@@ -103,7 +103,7 @@ const updateStudentFeedbackTargets = async () => {
     )
   }
 
-  await mangleData('enrolments', 3000, enrolmentsHandler)
+  await mangleData('enrolments', 1000, enrolmentsHandler)
 }
 
 const updateEnrolmentsOfCourse = async (courseRealisationId) => {
