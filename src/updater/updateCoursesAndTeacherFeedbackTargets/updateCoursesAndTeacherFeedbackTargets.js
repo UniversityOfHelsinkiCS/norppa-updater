@@ -109,7 +109,7 @@ const createCourseUnits = async (courseUnits) => {
     bulkCreate: async (e, opt) => CourseUnit.bulkCreate(e, opt),
     fallbackCreate: async (e, opt) => CourseUnit.create(e, opt),
     options: {
-      updateOnDuplicate: ['name', 'courseCode', 'validityPeriod'],
+      updateOnDuplicate: ['name', 'groupId', 'courseCode', 'validityPeriod'],
     },
   })
 
