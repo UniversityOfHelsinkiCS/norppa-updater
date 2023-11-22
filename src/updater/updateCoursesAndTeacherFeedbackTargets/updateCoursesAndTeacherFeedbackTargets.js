@@ -95,8 +95,9 @@ const createCourseUnits = async (courseUnits) => {
       ids.add(cu.id)
       return true
     })
-    .map(({ id, name, code, validityPeriod }) => ({
+    .map(({ id, groupId, name, code, validityPeriod }) => ({
       id,
+      groupId,
       name,
       courseCode: code,
       validityPeriod,
