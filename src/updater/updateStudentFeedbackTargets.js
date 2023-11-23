@@ -99,7 +99,7 @@ const updateStudentFeedbackTargets = async () => {
   // Delete only enrollments, not teacher relations
   if (new Date().getDay() === 1) {
     logger.info('[UPDATER] Deleting old enrolments', {})
-    const [_, {rowCount}] = await sequelize.query(
+    const [, {rowCount}] = await sequelize.query(
       `DELETE
         FROM user_feedback_targets ufbt
         USING feedback_targets fbt
@@ -112,7 +112,7 @@ const updateStudentFeedbackTargets = async () => {
       `,
     )
 
-    console.log(`DELETED ${rowCount} student feedback targets`)
+    logger.info(`DELETED ${rowCount} student feedback targets`)
   }
 
   await mangleData('enrolments', 1000, enrolmentsHandler, getDataSince)
@@ -170,7 +170,7 @@ const saveNewEnrolments = async (enrolments) => {
       if (created) newUfbts.push(it)
     } catch (err) {
       if (err.name === 'SequelizeForeignKeyConstraintError') {
-        logger.info('[UPDATER] got enrolment of unknown user')
+        logger.info(`[UPDATER] got enrolment of unknown user ${userId}`)
       } else {
         logger.error(`[UPDATER] error: ${err.message}`)
       }
