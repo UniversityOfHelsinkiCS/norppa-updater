@@ -7,7 +7,7 @@ const initializeSentry = (router) => {
   if (!inProduction || inStaging) return
 
   Sentry.init({
-    dsn: 'https://8877ea30aa714216b27b22c8aa395723@sentry.cs.helsinki.fi/6',
+    dsn: 'https://c2bfd74ae83d84b110d89d5ca00e560f@toska.cs.helsinki.fi/20',
     release: GIT_SHA,
     integrations: [
       new Sentry.Integrations.Http({ tracing: true }),
