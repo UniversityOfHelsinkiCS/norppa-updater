@@ -11,11 +11,11 @@ const logError = (message, error) => {
 }
 
 /**
- * If a single update category takes over an hour, something is probably wrong
+ * If a single update category takes over tow hours, something is probably wrong
  * Stop Updater from running indefinitely, crashing Norppa and messing up logs
  */
 const checkTimeout = (start) => {
-  if (Date.now() - start > 3_600_000)
+  if (Date.now() - start > 7_200_000)
     throw new Error('Updater time limit exceeded!')
   return true
 }
