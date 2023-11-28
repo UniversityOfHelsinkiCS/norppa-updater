@@ -16,7 +16,7 @@ const organisationsHandler = async (organisations) => {
     entityName: 'Organisation',
     entities: uniqueOrganisations,
     bulkCreate: async (e, opt) => Organisation.bulkCreate(e, opt),
-    fallbackCreate: async (e, opt) => Organisation.create(e, opt),
+    fallbackCreate: async (e, opt) => Organisation.upsert(e, opt),
     options: { updateOnDuplicate: ['name', 'code', 'parentId'] },
   })
 }

@@ -23,7 +23,7 @@ const safeBulkCreate = async ({
     logger.info(`[UPDATER] Creating ${entityName}s one by one`)
     for (const entity of entities) {
       try {
-        const res = await fallbackCreate(entity, options)
+        const res = await fallbackCreate(entity, { ...options, fields: options.updateOnDuplicate })
         result.push(res)
       } catch (error) {
         logError(

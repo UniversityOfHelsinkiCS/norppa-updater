@@ -122,7 +122,7 @@ const createCourseRealisations = async (courseRealisations) => {
     bulkCreate: async (entities, opt) =>
       CourseRealisationsOrganisation.bulkCreate(entities, opt),
     fallbackCreate: async (entity, opt) =>
-      CourseRealisationsOrganisation.create(entity, opt),
+      CourseRealisationsOrganisation.upsert(entity, opt),
     options: { ignoreDuplicates: true },
   })
 }

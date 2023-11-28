@@ -32,7 +32,7 @@ const usersHandler = async (users) => {
     entityName: 'User',
     entities: parsedUsers,
     bulkCreate: async (e, opt) => User.bulkCreate(e, opt),
-    fallbackCreate: async (e, opt) => User.create(e, opt),
+    fallbackCreate: async (e, opt) => User.upsert(e, opt),
     options: {
       updateOnDuplicate: [
         'firstName',

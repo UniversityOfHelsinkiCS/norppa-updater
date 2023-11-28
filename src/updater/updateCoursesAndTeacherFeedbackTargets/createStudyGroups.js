@@ -43,7 +43,7 @@ const createStudyGroups = async (feedbackTargets, courses) => {
     entityName: "Group",
     entities: groups,
     bulkCreate: async (e, opts) => Group.bulkCreate(e, opts),
-    fallbackCreate: async (e, opts) => Group.create(e, opts),
+    fallbackCreate: async (e, opts) => Group.upsert(e, opts),
     options: {
       updateOnDuplicate: ['name'],
     },

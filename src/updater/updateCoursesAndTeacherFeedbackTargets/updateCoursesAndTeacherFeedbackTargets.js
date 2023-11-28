@@ -107,7 +107,7 @@ const createCourseUnits = async (courseUnits) => {
     entityName: 'CourseUnit',
     entities: filteredCourseUnits,
     bulkCreate: async (e, opt) => CourseUnit.bulkCreate(e, opt),
-    fallbackCreate: async (e, opt) => CourseUnit.create(e, opt),
+    fallbackCreate: async (e, opt) => CourseUnit.upsert(e, opt),
     options: {
       updateOnDuplicate: ['name', 'groupId', 'courseCode', 'validityPeriod'],
     },
@@ -132,7 +132,7 @@ const createCourseUnits = async (courseUnits) => {
     bulkCreate: async (entities, opt) =>
       CourseUnitsOrganisation.bulkCreate(entities, opt),
     fallbackCreate: async (entity, opt) =>
-      CourseUnitsOrganisation.create(entity, opt),
+      CourseUnitsOrganisation.upsert(entity, opt),
     options: { ignoreDuplicates: true },
   })
 
@@ -182,7 +182,7 @@ const createCourseUnits = async (courseUnits) => {
     bulkCreate: async (entities, opt) =>
       CourseUnitsOrganisation.bulkCreate(entities, opt),
     fallbackCreate: async (entity, opt) =>
-      CourseUnitsOrganisation.create(entity, opt),
+      CourseUnitsOrganisation.upsert(entity, opt),
     options: { ignoreDuplicates: true },
   })
 }
@@ -319,7 +319,7 @@ const createFeedbackTargets = async (courses) => {
     entityName: 'FeedbackTarget',
     entities: feedbackTargetsWithEditedDates,
     bulkCreate: async (e, opts) => FeedbackTarget.bulkCreate(e, opts),
-    fallbackCreate: async (e, opts) => FeedbackTarget.create(e, opts),
+    fallbackCreate: async (e, opts) => FeedbackTarget.upsert(e, opts),
     options: {
       updateOnDuplicate: ['feedbackType', 'typeId'],
       returning: ['id'],
@@ -363,11 +363,17 @@ const createFeedbackTargets = async (courses) => {
   
   const uniqueUfbts = _.uniqBy(userFeedbackTargets, ufbt => `${ufbt.userId}${ufbt.feedbackTargetId}`)
 
+  /* const theOne = uniqueUfbts.find(ufbt => ufbt.userId === 'hy-hlo-135926825')
+
+  if (theOne) {
+    console.log(JSON.stringify(theOne, null, 2))
+  } */
+
   await safeBulkCreate({
     entityName: 'UserFeedbackTarget',
     entities: uniqueUfbts,
     bulkCreate: async (e, opts) => UserFeedbackTarget.bulkCreate(e, opts),
-    fallbackCreate: async (e, opts) => UserFeedbackTarget.create(e, opts),
+    fallbackCreate: async (e, opts) => UserFeedbackTarget.upsert(e, opts),
     options: { updateOnDuplicate: ["groupIds", "accessStatus", "isAdministrativePerson"] },
   })
 }
