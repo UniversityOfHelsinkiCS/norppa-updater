@@ -22,7 +22,7 @@ const mangleData = require('../mangleData')
 const { sequelize } = require('../../db/dbConnection')
 const { safeBulkCreate } = require('../util')
 const { createCourseRealisations, createInactiveCourseRealisations } = require('./createCourseRealisations')
-const { formatDate, formatWithHours } = require('./utils')
+const { formatWithHours, getFeedbackCount } = require('./utils')
 const { createStudyGroups } = require('./createStudyGroups')
 
 const validRealisationTypes = [
@@ -321,7 +321,7 @@ const createFeedbackTargets = async (courses) => {
     bulkCreate: async (e, opts) => FeedbackTarget.bulkCreate(e, opts),
     fallbackCreate: async (e, opts) => FeedbackTarget.upsert(e, opts),
     options: {
-      updateOnDuplicate: ['feedbackType', 'typeId'],
+      updateOnDuplicate: ['name', 'feedbackType', 'typeId'],
       returning: ['id'],
     },
   })
@@ -332,7 +332,7 @@ const createFeedbackTargets = async (courses) => {
     bulkCreate: async (e, opts) => FeedbackTarget.bulkCreate(e, opts),
     fallbackCreate: async (e, opts) => FeedbackTarget.create(e, opts),
     options: {
-      updateOnDuplicate: ['feedbackType', 'typeId', 'opensAt', 'closesAt'],
+      updateOnDuplicate: ['name', 'feedbackType', 'typeId', 'opensAt', 'closesAt'],
       returning: ['id'],
     },
   })
@@ -362,13 +362,7 @@ const createFeedbackTargets = async (courses) => {
     .sort(sortAccessStatus)
   
   const uniqueUfbts = _.uniqBy(userFeedbackTargets, ufbt => `${ufbt.userId}${ufbt.feedbackTargetId}`)
-
-  /* const theOne = uniqueUfbts.find(ufbt => ufbt.userId === 'hy-hlo-135926825')
-
-  if (theOne) {
-    console.log(JSON.stringify(theOne, null, 2))
-  } */
-
+ 
   await safeBulkCreate({
     entityName: 'UserFeedbackTarget',
     entities: uniqueUfbts,
@@ -498,6 +492,25 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
 
   logger.info(`Destroyed ${destroyedCourseRealisations} course realisations`)
 }
+ 
+const getArchivedCoursesToDelete = async (courses) => {
+  const allArchivedCourses = courses.filter(
+    (course) => course.flowState === 'ARCHIVED',
+  )
+
+  await Promise.all(
+    allArchivedCourses.map(async (course) => {
+      const feedbackCount = await getFeedbackCount(course.id)
+      course.feedbackCount = feedbackCount
+    }),
+  )
+
+  const archivedCoursesWithoutFeedback = allArchivedCourses.filter(
+    (course) => course.feedbackCount === 0,
+  )
+
+  return archivedCoursesWithoutFeedback
+}
 
 const coursesHandler = async (courses) => {
   const includeCurs = await getIncludeCurs()
@@ -516,13 +529,15 @@ const coursesHandler = async (courses) => {
 
   const cancelledCourseIds = cancelledCourses.map((course) => course.id)
 
+  const archivedCourses = await getArchivedCoursesToDelete(courses)
+  const archivedCourseIds = archivedCourses.map((course) => course.id)
+
   await createCourseRealisations(filteredCourses)
 
   await createFeedbackTargets(filteredCourses)
 
-  if (cancelledCourseIds.length > 0) {
-    await deleteCancelledCourses(cancelledCourseIds)
-  }
+  if (cancelledCourseIds.length > 0) await deleteCancelledCourses(cancelledCourseIds)
+  if (archivedCourseIds.length > 0) await deleteCancelledCourses(archivedCourseIds)
 
   const inactiveCourseRealisations = courses.filter(
     (course) =>
