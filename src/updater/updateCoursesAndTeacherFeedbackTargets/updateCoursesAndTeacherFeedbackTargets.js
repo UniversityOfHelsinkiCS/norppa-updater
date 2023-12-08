@@ -217,21 +217,30 @@ const sortAccessStatus = (a, b) => {
   return 0
 }
 
+// Find the newest course unit that has started before the course realisation
 const getCourseUnit = ({ activityPeriod, courseUnits }) => {
-  const { startDate: realisationStartDate, endDate: realisationEndDate } = activityPeriod
+  let courseUnit = courseUnits[0] // old default
 
-  const courseUnit = courseUnits.find(({ validityPeriod }) => {
-    const { startDate, endDate } = validityPeriod
+  const { startDate: realisationStartDate } = activityPeriod
 
-    if (!startDate || !endDate) return false
+  courseUnits.sort((a, b) => {
+    const { startDate: aStartDate } = a.validityPeriod
+    const { startDate: bStartDate } = b.validityPeriod
 
-    return (
-      dateFns.isBefore(new Date(realisationStartDate), new Date(endDate)) &&
-      dateFns.isAfter(new Date(realisationEndDate), new Date(startDate))
-    )
+    if (!aStartDate || !bStartDate) return 0
+
+    return dateFns.isAfter(new Date(aStartDate), new Date(bStartDate)) ? -1 : 1
   })
 
-  return courseUnit ?? courseUnits[0]
+  courseUnit = courseUnits.find(({ validityPeriod }) => {
+    const { startDate } = validityPeriod
+
+    if (!startDate) return false
+
+    return dateFns.isAfter(new Date(realisationStartDate), new Date(startDate))
+  }) ?? courseUnit
+
+  return courseUnit
 }
 
 const getAccessStatus = (roleUrn, courseRealisation) => {
@@ -321,7 +330,7 @@ const createFeedbackTargets = async (courses) => {
     bulkCreate: async (e, opts) => FeedbackTarget.bulkCreate(e, opts),
     fallbackCreate: async (e, opts) => FeedbackTarget.upsert(e, opts),
     options: {
-      updateOnDuplicate: ['name', 'feedbackType', 'typeId'],
+      updateOnDuplicate: ['name', 'feedbackType', 'typeId', 'courseUnitId'],
       returning: ['id'],
     },
   })
@@ -332,7 +341,7 @@ const createFeedbackTargets = async (courses) => {
     bulkCreate: async (e, opts) => FeedbackTarget.bulkCreate(e, opts),
     fallbackCreate: async (e, opts) => FeedbackTarget.create(e, opts),
     options: {
-      updateOnDuplicate: ['name', 'feedbackType', 'typeId', 'opensAt', 'closesAt'],
+      updateOnDuplicate: ['name', 'feedbackType', 'typeId', 'courseUnitId', 'opensAt', 'closesAt'],
       returning: ['id'],
     },
   })
@@ -520,7 +529,7 @@ const coursesHandler = async (courses) => {
       includeCurs.includes(course.id) ||
       (course.courseUnits.length &&
         validRealisationTypes.includes(course.courseUnitRealisationTypeUrn) &&
-        course.flowState !== 'CANCELLED'),
+        course.flowState !== 'CANCELLED' && course.flowState !== 'ARCHIVED'),
   )
 
   const cancelledCourses = courses.filter(
