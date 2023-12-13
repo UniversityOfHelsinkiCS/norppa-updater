@@ -1,5 +1,6 @@
 const { Op } = require('sequelize')
 const _ = require('lodash')
+const { isAfter, addDays } = require('date-fns')
 
 const { FeedbackTarget, CourseRealisation, UserFeedbackTarget } = require('../models')
 const logger = require('../util/logger')
@@ -90,7 +91,10 @@ const synchronizeUserFeedbackTargets = async () => {
       const userFeedbackTargets = userFeedbackTargetsByAccessStatus[accessStatus]
 
       for (const interimFeedbackTarget of courseRealisation.feedbackTargets) {
-        await updateUserFeedbackTargets(interimFeedbackTarget.id, userFeedbackTargets, accessStatus)
+        // Skip updating if interim feedback closed over a month ago
+        if (isAfter(addDays(interimFeedbackTarget.closesAt, 30), new Date())) {
+          await updateUserFeedbackTargets(interimFeedbackTarget.id, userFeedbackTargets, accessStatus)
+        }
       }
     }
   }
