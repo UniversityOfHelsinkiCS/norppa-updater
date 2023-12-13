@@ -2,6 +2,8 @@ const { Op } = require('sequelize')
 const _ = require('lodash')
 
 const { FeedbackTarget, CourseRealisation, UserFeedbackTarget } = require('../models')
+const logger = require('../util/logger')
+const { logOperation } = require('./util')
 
 const getUserFeedbackTargets = async (feedbackTargetId, accessStatus) => {
   const userFeedbackTargets = await UserFeedbackTarget.findAll({
@@ -40,7 +42,9 @@ const updateUserFeedbackTargets = async (feedbackTargetId, userFeedbackTargets, 
   )
 }
 
-const synchronizeInterimFeedbacks = async () => {
+const synchronizeUserFeedbackTargets = async () => {
+  logger.info('[UPDATER] starting to synchronize interim feedback userFeedbackTargets')
+
   const courseRealisationsWithInterimFeedbacks = await CourseRealisation.findAll({
     where: {
       userCreated: false,
@@ -57,14 +61,12 @@ const synchronizeInterimFeedbacks = async () => {
     ],
   })
 
-  const courseRealisationIds = new Set(courseRealisationsWithInterimFeedbacks.map(
-    (({ id }) => id)
-  ))
+  const courseRealisationIds = courseRealisationsWithInterimFeedbacks.map((({ id }) => id))
 
   const originalFeedbackTargets = await FeedbackTarget.findAll({
     where: {
       userCreated: false,
-      courseRealisationId: Array.from(courseRealisationIds),
+      courseRealisationId: { [Op.in]: courseRealisationIds },
     },
     include:
       {
@@ -87,11 +89,18 @@ const synchronizeInterimFeedbacks = async () => {
     for (const accessStatus of Object.keys(userFeedbackTargetsByAccessStatus)) {
       const userFeedbackTargets = userFeedbackTargetsByAccessStatus[accessStatus]
 
-      for (const fbt of courseRealisation.feedbackTargets) {
-        await updateUserFeedbackTargets(fbt.id, userFeedbackTargets, accessStatus)
+      for (const interimFeedbackTarget of courseRealisation.feedbackTargets) {
+        await updateUserFeedbackTargets(interimFeedbackTarget.id, userFeedbackTargets, accessStatus)
       }
     }
   }
+}
+
+const synchronizeInterimFeedbacks = async () => {
+  await logOperation(
+    synchronizeUserFeedbackTargets,
+    '[UPDATER][interimFeedbacks] synchronized user feedback targets',
+  )
 }
 
 module.exports = {

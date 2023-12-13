@@ -38,6 +38,28 @@ const safeBulkCreate = async ({
   }
 }
 
+const logOperation = async (func, message) => {
+  const start = Date.now()
+  let success = false
+  let info = null
+  try {
+    info = await func()
+    success = true
+  } catch (error) {
+    Sentry.captureMessage(`Operation failed: ${message}`)
+    Sentry.captureException(error)
+    logger.error('Error: ', error)
+  }
+
+  const durationMs = (Date.now() - start).toFixed()
+  if (success) {
+    logger.info(`${message} - done in ${durationMs} ms`, info)
+  } else {
+    logger.error(`Failure: ${message} - failed in ${durationMs} ms`, info)
+  }
+}
+
 module.exports = {
   safeBulkCreate,
+  logOperation,
 }

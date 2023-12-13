@@ -3,27 +3,7 @@ const { QueryTypes } = require('sequelize')
 const { FeedbackTarget } = require('../models')
 const { sequelize } = require('../db/dbConnection')
 const logger = require('../util/logger')
-
-const logOperation = async (func, message) => {
-  const start = Date.now()
-  let success = false
-  let info = null
-  try {
-    info = await func()
-    success = true
-  } catch (error) {
-    Sentry.captureMessage(`Operation failed: ${message}`)
-    Sentry.captureException(error)
-    logger.error('Error: ', error)
-  }
-
-  const durationMs = (Date.now() - start).toFixed()
-  if (success) {
-    logger.info(`${message} - done in ${durationMs} ms`, info)
-  } else {
-    logger.error(`Failure: ${message} - failed in ${durationMs} ms`, info)
-  }
-}
+const { logOperation } = require('./util')
 
 const updateHiddenCount = async () => {
   const countsById = await sequelize.query(
