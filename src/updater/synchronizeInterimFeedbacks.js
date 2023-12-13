@@ -33,11 +33,12 @@ const updateUserFeedbackTargets = async (feedbackTargetId, userFeedbackTargets, 
   const newUserFeedbackTargets = userFeedbackTargets.filter(({ userId }) => !existingUserIds.includes(userId))
 
   await UserFeedbackTarget.bulkCreate(
-    newUserFeedbackTargets.map(({ userId, isAdministrativePerson }) => ({
-      accessStatus,
+    newUserFeedbackTargets.map(({ userId, isAdministrativePerson, groupIds }) => ({
       feedbackTargetId,
       userId,
+      accessStatus,
       isAdministrativePerson,
+      groupIds,
       userCreated: true,
     }))
   )
@@ -73,7 +74,7 @@ const synchronizeUserFeedbackTargets = async () => {
       {
         model: UserFeedbackTarget,
         as: 'userFeedbackTargets',
-        attributes: ['userId', 'accessStatus', 'isAdministrativePerson'],
+        attributes: ['userId', 'accessStatus', 'isAdministrativePerson', 'groupIds'],
       },
   })
 
