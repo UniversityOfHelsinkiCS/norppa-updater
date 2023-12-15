@@ -44,13 +44,17 @@ const inactiveRealisationTypes = [
   'urn:code:course-unit-realisation-type:training-training',
 ]
 
-const administrativePersonUrn =
-  'urn:code:course-unit-realisation-responsibility-info-type:administrative-person'
+const administrativePersonUrns = [
+  'urn:code:course-unit-realisation-responsibility-info-type:administrative-person',
+  'urn:code:module-responsibility-info-type:administrative-person',
+]
 
 const responsibleTeacherUrns = [
   'urn:code:course-unit-realisation-responsibility-info-type:responsible-teacher',
   'urn:code:course-unit-realisation-responsibility-info-type:contact-info',
-  administrativePersonUrn,
+  'urn:code:module-responsibility-info-type:responsible-teacher',
+  'urn:code:module-responsibility-info-type:contact-info',
+  ...administrativePersonUrns,
 ]
 
 const commonFeedbackName = {
@@ -252,15 +256,25 @@ const getAccessStatus = (roleUrn, courseRealisation) => {
   return responsibleTeacherUrns.includes(roleUrn) ? 'RESPONSIBLE_TEACHER' : 'TEACHER'
 }
 
+const getResponsibilityInfos = (_courseUnit, courseRealisation) => {
+  const combinedResponsibilityInfos = courseRealisation.responsibilityInfos //.concat(courseUnit.responsibilityInfos)
+
+  const uniqueResponsibilityInfos = _.uniqBy(combinedResponsibilityInfos, ({ personId, roleUrn }) => `${personId}${roleUrn}`)
+
+  return uniqueResponsibilityInfos
+}
+
 const createFeedbackTargets = async (courses) => {
   const courseIdToPersonIds = {}
 
   const feedbackTargetPayloads = courses.map((course) => {
-    courseIdToPersonIds[course.id] = course.responsibilityInfos
+    const courseUnit = getCourseUnit(course)
+
+    const responsibilityInfos = getResponsibilityInfos(courseUnit, course)
+
+    courseIdToPersonIds[course.id] = responsibilityInfos
       .filter(({ personId }) => personId)
       .map(({ personId, roleUrn }) => ({ personId, roleUrn }))
-
-    const courseUnit = getCourseUnit(course)
 
     const courseEndDate = dateFns.endOfDay(
       new Date(course.activityPeriod.endDate),
@@ -362,7 +376,7 @@ const createFeedbackTargets = async (courses) => {
               userId: personId,
               groupIds: teacherGroups[personId], // Its allowed to be null
               accessStatus: getAccessStatus(roleUrn, courses.find(({ id }) => id === courseRealisationId)),
-              isAdministrativePerson: roleUrn === administrativePersonUrn,
+              isAdministrativePerson: administrativePersonUrns.includes(roleUrn),
             }),
           ),
       ),
