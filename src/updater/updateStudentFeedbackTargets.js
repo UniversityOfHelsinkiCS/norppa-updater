@@ -1,3 +1,5 @@
+const _ = require('lodash')
+const { Op } = require('sequelize')
 const { subHours } = require('date-fns')
 
 const { sequelize } = require('../db/dbConnection')
@@ -7,25 +9,28 @@ const mangleData = require('./mangleData')
 const { fetchData } = require('./importerClient')
 // const { notifyOnEnrolmentsIfRequested } = require('../services/enrolmentNotices/enrolmentNotices')
 
-const createEnrolmentTargets = async (enrolment) => {
-  const {
-    personId: userId,
-    courseUnitRealisationId,
-    confirmedStudySubGroupIds,
-  } = enrolment
+const createEnrolmentTargets = async (enrolments) => {
+  const courseUnitRealisationIds = enrolments.map(({ courseUnitRealisationId }) => courseUnitRealisationId)
 
   const feedbackTargets = await FeedbackTarget.findAll({
     where: {
       feedbackType: 'courseRealisation',
-      typeId: courseUnitRealisationId,
+      typeId: {
+        [Op.in]: courseUnitRealisationIds
+      },
     },
   })
-  const userFeedbackTargets = feedbackTargets.map((feedbackTarget) => ({
-    accessStatus: 'STUDENT',
-    userId,
-    feedbackTargetId: feedbackTarget.id,
-    groupIds: confirmedStudySubGroupIds.length > 0 ? confirmedStudySubGroupIds : null // sequelize doesnt like empty arrays for some reason
-  }))
+
+  const enrolmentsByCourseUnitRealisationId = _.groupBy(enrolments, 'courseUnitRealisationId')
+
+  const userFeedbackTargets = feedbackTargets.flatMap((feedbackTarget) => enrolmentsByCourseUnitRealisationId[feedbackTarget.typeId].map((enrolment) => ({
+      accessStatus: 'STUDENT',
+      userId: enrolment.personId,
+      feedbackTargetId: feedbackTarget.id,
+      groupIds: enrolment.confirmedStudySubGroupIds.length > 0 ? enrolment.confirmedStudySubGroupIds : null // sequelize doesnt like empty arrays for some reason
+    }))
+  )
+
   return userFeedbackTargets
 }
 
@@ -49,11 +54,7 @@ const bulkCreateUserFeedbackTargets = async (userFeedbackTargets) => {
 }
 
 const enrolmentsHandler = async (enrolments) => {
-  const userFeedbackTargets = []
-
-  for (const enrolment of enrolments) {
-    userFeedbackTargets.push(...(await createEnrolmentTargets(enrolment)))
-  }
+  const userFeedbackTargets = await createEnrolmentTargets(enrolments)
 
   let count = 0
   try {
@@ -115,7 +116,7 @@ const updateStudentFeedbackTargets = async () => {
     logger.info(`DELETED ${rowCount} student feedback targets`)
   }
 
-  await mangleData('enrolments', 1000, enrolmentsHandler, getDataSince)
+  await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
 }
 
 const updateEnrolmentsOfCourse = async (courseRealisationId) => {
