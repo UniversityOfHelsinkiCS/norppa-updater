@@ -9,7 +9,7 @@ const mangleData = require('./mangleData')
 const { fetchData } = require('./importerClient')
 // const { notifyOnEnrolmentsIfRequested } = require('../services/enrolmentNotices/enrolmentNotices')
 
-const createEnrolmentTargets = async (enrolments) => {
+const getEnrolmentFeedbackTargets = async (enrolments) => {
   const courseUnitRealisationIds = enrolments.map(({ courseUnitRealisationId }) => courseUnitRealisationId)
 
   const feedbackTargets = await FeedbackTarget.findAll({
@@ -19,7 +19,14 @@ const createEnrolmentTargets = async (enrolments) => {
         [Op.in]: courseUnitRealisationIds
       },
     },
+    attributes: ['id', 'typeId'],
   })
+
+  return feedbackTargets
+}
+
+const createEnrolmentTargets = async (enrolments) => {
+  const feedbackTargets = await getEnrolmentFeedbackTargets(enrolments)
 
   const enrolmentsByCourseUnitRealisationId = _.groupBy(enrolments, 'courseUnitRealisationId')
 
@@ -27,11 +34,38 @@ const createEnrolmentTargets = async (enrolments) => {
       accessStatus: 'STUDENT',
       userId: enrolment.personId,
       feedbackTargetId: feedbackTarget.id,
-      groupIds: enrolment.confirmedStudySubGroupIds.length > 0 ? enrolment.confirmedStudySubGroupIds : null // sequelize doesnt like empty arrays for some reason
+      groupIds: enrolment.confirmedStudySubGroupIds.length > 0 ? enrolment.confirmedStudySubGroupIds : null, // sequelize doesnt like empty arrays for some reason
     }))
   )
 
   return userFeedbackTargets
+}
+
+const deleteInactiveEnrolments = async (enrolments) => {
+  const feedbackTargets = await getEnrolmentFeedbackTargets(enrolments)
+
+  const enrolmentsByCourseUnitRealisationId = _.groupBy(enrolments, 'courseUnitRealisationId')
+
+  const userFeedbackTargetsToDelete = feedbackTargets.flatMap((feedbackTarget) => enrolmentsByCourseUnitRealisationId[feedbackTarget.typeId].map((enrolment) => ({
+      userId: enrolment.personId,
+      feedbackTargetId: feedbackTarget.id,
+    }))
+  )
+
+  userFeedbackTargetsToDelete.forEach(async (ufbt) => {
+    const deleted = await UserFeedbackTarget.destroy({
+      where: {
+        userId: ufbt.userId,
+        feedbackTargetId: ufbt.feedbackTargetId,
+        accessStatus: 'STUDENT',
+        userCreated: false,
+        feedbackOpenEmailSent: false,
+        feedbackId: null,
+      },
+    })
+
+    if (deleted) logger.info(`Deleted student feedback target ${ufbt.userId} ${ufbt.feedbackTargetId}`)
+  })
 }
 
 const bulkCreateUserFeedbackTargets = async (userFeedbackTargets) => {
@@ -54,7 +88,11 @@ const bulkCreateUserFeedbackTargets = async (userFeedbackTargets) => {
 }
 
 const enrolmentsHandler = async (enrolments) => {
-  const userFeedbackTargets = await createEnrolmentTargets(enrolments)
+  const [activeEnrolments, inactiveEnrolments] = _.partition(enrolments, (enrolment) => enrolment.state === 'ENROLLED')
+
+  await deleteInactiveEnrolments(inactiveEnrolments)
+
+  const userFeedbackTargets = await createEnrolmentTargets(activeEnrolments)
 
   let count = 0
   try {
@@ -95,26 +133,6 @@ const updateStudentFeedbackTargets = async () => {
   // Date from onwards the fbts are to be updated
   const getDataSince = new Date()
   getDataSince.setFullYear(getDataSince.getFullYear() - 2)
-
-  // Delete all old enrolments once a week sunday-monday night.
-  // Delete only enrollments, not teacher relations
-  if (new Date().getDay() === 1) {
-    logger.info('[UPDATER] Deleting old enrolments', {})
-    const [, {rowCount}] = await sequelize.query(
-      `DELETE
-        FROM user_feedback_targets ufbt
-        USING feedback_targets fbt
-      WHERE ufbt.feedback_target_id = fbt.id
-        AND feedback_id IS NULL
-        AND access_status = 'STUDENT'
-        AND feedback_open_email_sent = false
-        AND fbt.user_created = false
-        AND fbt.closes_at >= '${getDataSince.toISOString()}'::date
-      `,
-    )
-
-    logger.info(`DELETED ${rowCount} student feedback targets`)
-  }
 
   await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
 }
