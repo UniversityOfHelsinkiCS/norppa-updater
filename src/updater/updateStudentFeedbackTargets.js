@@ -2,12 +2,11 @@ const _ = require('lodash')
 const { Op } = require('sequelize')
 const { subHours } = require('date-fns')
 
-const { sequelize } = require('../db/dbConnection')
+const { safeBulkCreate } = require('./util')
 const { FeedbackTarget, UserFeedbackTarget } = require('../models')
 const logger = require('../util/logger')
 const mangleData = require('./mangleData')
 const { fetchData } = require('./importerClient')
-// const { notifyOnEnrolmentsIfRequested } = require('../services/enrolmentNotices/enrolmentNotices')
 
 const getEnrolmentFeedbackTargets = async (enrolments) => {
   const courseUnitRealisationIds = enrolments.map(({ courseUnitRealisationId }) => courseUnitRealisationId)
@@ -38,7 +37,9 @@ const createEnrolmentTargets = async (enrolments) => {
     }))
   )
 
-  return userFeedbackTargets
+  const filteredUserFeedbackTargets = userFeedbackTargets.filter((target) => target.userId && target.feedbackTargetId)
+
+  return filteredUserFeedbackTargets
 }
 
 const deleteInactiveEnrolments = async (enrolments) => {
@@ -64,27 +65,33 @@ const deleteInactiveEnrolments = async (enrolments) => {
       },
     })
 
-    if (deleted) logger.info(`Deleted student feedback target ${ufbt.userId} ${ufbt.feedbackTargetId}`)
+    if (deleted) logger.info('Deleted student feedback target', { userId: ufbt.userId, feedbackTargetId: ufbt.feedbackTargetId })
   })
 }
 
-const bulkCreateUserFeedbackTargets = async (userFeedbackTargets) => {
-  const normalizedUserFeedbackTargets = userFeedbackTargets
-    .map(({ userId, feedbackTargetId, accessStatus, groupIds }) => ({
-      userId,
-      feedbackTargetId,
-      accessStatus,
-      groupIds,
-    }))
-    .filter((target) => target.userId && target.feedbackTargetId)
+const createEnrolmentFallback = async (ufbt) => {
+  const { userId, feedbackTargetId, accessStatus, groupIds } = ufbt
 
-  const ufbts = await UserFeedbackTarget.bulkCreate(
-    normalizedUserFeedbackTargets,
-    {
-      updateOnDuplicate: ['groupIds']
-    },
-  )
-  return ufbts.length
+  try {
+    await UserFeedbackTarget.findOrCreate({
+      where: {
+        userId,
+        feedbackTargetId,
+      },
+      defaults: {
+        userId,
+        feedbackTargetId,
+        accessStatus,
+        groupIds,
+      },
+    })
+  } catch (err) {
+    if (err.name === 'SequelizeForeignKeyConstraintError') {
+      logger.info('[UPDATER] got enrolment of unknown user', { userId, feedbackTargetId })
+    } else {
+      logger.error(`[UPDATER] error: ${err.message}`)
+    }
+  }
 }
 
 const enrolmentsHandler = async (enrolments) => {
@@ -94,39 +101,13 @@ const enrolmentsHandler = async (enrolments) => {
 
   const userFeedbackTargets = await createEnrolmentTargets(activeEnrolments)
 
-  let count = 0
-  try {
-    count += await bulkCreateUserFeedbackTargets(userFeedbackTargets)
-  } catch (err) {
-    logger.info(
-      `[UPDATER] RUNNING ${userFeedbackTargets.length} TARGETS ONE BY ONE`,
-    )
-    for (const ufbt of userFeedbackTargets) {
-      const { userId, feedbackTargetId, accessStatus, groupIds } = ufbt
-      try {
-        await UserFeedbackTarget.findOrCreate({
-          where: {
-            userId,
-            feedbackTargetId,
-          },
-          defaults: {
-            userId,
-            feedbackTargetId,
-            accessStatus,
-            groupIds,
-          },
-        })
-        count += 1
-      } catch (err) {
-        if (err.name === 'SequelizeForeignKeyConstraintError') {
-          logger.info('[UPDATER] got enrolment of unknown user')
-        } else {
-          logger.error(`[UPDATER] error: ${err.message}`)
-        }
-      }
-    }
-  }
-  return count
+  await safeBulkCreate({
+    entityName: 'UserFeedbackTarget',
+    entities: userFeedbackTargets,
+    bulkCreate: async (e, opt) => UserFeedbackTarget.bulkCreate(e, opt),
+    fallbackCreate: async (e) => createEnrolmentFallback(e),
+    options: { updateOnDuplicate: ['groupIds'] },
+  })
 }
 
 const updateStudentFeedbackTargets = async () => {
@@ -195,8 +176,6 @@ const saveNewEnrolments = async (enrolments) => {
       }
     }
   }
-
-  // await notifyOnEnrolmentsIfRequested(newUfbts)
 
   return newUfbts.length
 }
