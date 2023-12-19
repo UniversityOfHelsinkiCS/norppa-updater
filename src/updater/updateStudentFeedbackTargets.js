@@ -101,13 +101,15 @@ const enrolmentsHandler = async (enrolments) => {
 
   const userFeedbackTargets = await createEnrolmentTargets(activeEnrolments)
 
-  await safeBulkCreate({
+  const newUfbts = await safeBulkCreate({
     entityName: 'UserFeedbackTarget',
     entities: userFeedbackTargets,
     bulkCreate: async (e, opt) => UserFeedbackTarget.bulkCreate(e, opt),
     fallbackCreate: async (e) => createEnrolmentFallback(e),
     options: { updateOnDuplicate: ['groupIds'] },
   })
+
+  return newUfbts.length
 }
 
 const updateStudentFeedbackTargets = async () => {
@@ -144,42 +146,6 @@ const updateEnrolmentsOfCourse = async (courseRealisationId) => {
   }
 }
 
-const saveNewEnrolments = async (enrolments) => {
-  const userFeedbackTargets = []
-  const newUfbts = []
-
-  for (const enrolment of enrolments) {
-    userFeedbackTargets.push(...(await createEnrolmentTargets(enrolment)))
-  }
-
-  for (const ufbt of userFeedbackTargets) {
-    const { userId, feedbackTargetId, accessStatus } = ufbt
-    try {
-      const [it, created] = await UserFeedbackTarget.findOrCreate({
-        where: {
-          userId,
-          feedbackTargetId,
-        },
-        defaults: {
-          user_id: userId,
-          feedback_target_id: feedbackTargetId,
-          accessStatus,
-        },
-      })
-
-      if (created) newUfbts.push(it)
-    } catch (err) {
-      if (err.name === 'SequelizeForeignKeyConstraintError') {
-        logger.info(`[UPDATER] got enrolment of unknown user ${userId}`)
-      } else {
-        logger.error(`[UPDATER] error: ${err.message}`)
-      }
-    }
-  }
-
-  return newUfbts.length
-}
-
 const updateNewEnrolments = async () => {
   const start = new Date()
   const twoHoursAgo = subHours(start, 2)
@@ -188,7 +154,8 @@ const updateNewEnrolments = async () => {
       since: twoHoursAgo,
     }, (data) => Array.isArray(data))
 
-    const count = await saveNewEnrolments(enrolments)
+    const count = await enrolmentsHandler(enrolments)
+
     const end = Date.now()
     logger.info(
       `[UPDATER] updated new enrolments (${
