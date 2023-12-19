@@ -50,7 +50,7 @@ const usersHandler = async (users) => {
 }
 
 const updateUsers = async () => {
-  await mangleData('persons', 2000, usersHandler)
+  await mangleData('persons', 10_000, usersHandler)
 }
 
 module.exports = updateUsers
