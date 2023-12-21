@@ -38,7 +38,8 @@ const mangleData = async (url, limit, handler, since = null) => {
   let requestStart = null
   let loopStart = Date.now()
 
-  let offset = Number(await redis.get(offsetKey))
+  // TODO: remove this once updateCoursesAndTeacherFeedbackTargets is fixed
+  let offset = url === 'course_unit_realisations_with_course_units' ? 0 : Number(await redis.get(offsetKey))
   let count = 0
   let currentData = null
   let nextData = null
