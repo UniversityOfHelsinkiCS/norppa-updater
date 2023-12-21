@@ -2,6 +2,7 @@ const Sentry = require('@sentry/node')
 const { inProduction, inStaging } = require('../util/config')
 const logger = require('../util/logger')
 const { schedule } = require('../util/cron')
+const { clearOffsets } = require('./util')
 const updateUsers = require('./updateUsers')
 const updateOrganisations = require('./updateOrganisations')
 const {
@@ -9,6 +10,7 @@ const {
 } = require('./updateCoursesAndTeacherFeedbackTargets')
 const {
   updateStudentFeedbackTargets,
+  updateNewEnrolments,
 } = require('./updateStudentFeedbackTargets')
 const { updateFeedbackTargetCounts } = require('./updateFeedbackTargetCounts')
 const { synchronizeInterimFeedbacks } = require('./synchronizeInterimFeedbacks')
@@ -24,6 +26,7 @@ const runUpdater = async () => {
   await updateStudentFeedbackTargets()
   await updateFeedbackTargetCounts()
   await synchronizeInterimFeedbacks()
+  await updateNewEnrolments()
 }
 
 const checkStatusOnStartup = async () => {
@@ -33,13 +36,18 @@ const checkStatusOnStartup = async () => {
     },
   })
 
-  for (const status of statuses) {
-    status.status = 'INTERRUPTED'
-    status.finishedAt = new Date()
-    await status.save()
-    const msg = `Server had a restart while updater was running, interrupting ${status.jobType}`
-    Sentry.captureMessage(msg)
-    logger.error(`[UPDATER] ${msg}`)
+  if (!inProduction && statuses.length === 1) {
+    logger.info(`Server had a restart while updater was running, continuing ${statuses[0].jobType}`)
+    await runUpdater()
+  } else {
+    for (const status of statuses) {
+      status.status = 'INTERRUPTED'
+      status.finishedAt = new Date()
+      await status.save()
+      const msg = `Server had a restart while updater was running, interrupting ${status.jobType}`
+      Sentry.captureMessage(msg)
+      logger.error(`[UPDATER] ${msg}`)
+    }
   }
 }
 
@@ -52,6 +60,7 @@ const run = async () => {
   })
 
   try {
+    await clearOffsets()
     await runUpdater()
   } catch (error) {
     Sentry.captureException(error)

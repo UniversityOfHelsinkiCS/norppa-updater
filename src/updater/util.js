@@ -1,4 +1,6 @@
 const Sentry = require('@sentry/node')
+
+const { redis } = require('../util/redisClient')
 const logger = require('../util/logger')
 
 const logError = (message, error) => {
@@ -59,7 +61,16 @@ const logOperation = async (func, message) => {
   }
 }
 
+const clearOffsets = async () => {
+  const keys = await redis.keys('*-offset')
+
+  for (const key of keys) {
+    await redis.delete(key)
+  }
+}
+
 module.exports = {
   safeBulkCreate,
   logOperation,
+  clearOffsets,
 }

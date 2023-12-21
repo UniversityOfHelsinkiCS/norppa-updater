@@ -2,8 +2,10 @@
 /* eslint-disable no-loop-func */
 /* eslint-disable no-await-in-loop */
 const Sentry = require('@sentry/node')
+
 const logger = require('../util/logger')
 const { fetchData } = require('./importerClient')
+const { redis } = require('../util/redisClient')
 
 const logError = (message, error) => {
   logger.error(`[UPDATER] ${message} ${error.name}, ${error.message}`)
@@ -31,11 +33,12 @@ const checkTimeout = (start) => {
  */
 const mangleData = async (url, limit, handler, since = null) => {
   logger.info(`[UPDATER] Starting to update items with url ${url}`)
+  const offsetKey = `${url}-offset`
   const start = Date.now()
   let requestStart = null
   let loopStart = Date.now()
 
-  let offset = 0
+  let offset = Number(await redis.get(offsetKey))
   let count = 0
   let currentData = null
   let nextData = null
@@ -72,6 +75,7 @@ const mangleData = async (url, limit, handler, since = null) => {
 
       try {
         await handler(currentData)
+        redis.set(offsetKey, offset)
       } catch (e) {
         logError('Updaterloop handler error:', e)
         e.isLogged = true
