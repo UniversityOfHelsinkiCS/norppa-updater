@@ -14,6 +14,7 @@ const { start: startEnrolmentsCron } = require('./util/updateEnrolmentsCron')
 const logger = require('./util/logger')
 const { PORT, NODE_ENV } = require('./util/config')
 const initializeSentry = require('./util/sentry')
+const { redis } = require('./util/redisClient')
 
 const app = express()
 
@@ -51,6 +52,7 @@ app.use(Sentry.Handlers.errorHandler())
 const start = async () => {
   await connectToDatabase()
   await initializeFunctions()
+  await redis.connect()
   await updater.checkStatusOnStartup()
   await updater.start()
   await startEnrolmentsCron()

@@ -7,7 +7,7 @@ const basePath = process.env.PUBLIC_URL || ''
 
 const GIT_SHA = process.env.REACT_APP_GIT_SHA || ''
 
-const { API_TOKEN } = process.env
+const { API_TOKEN, REDIS_HOST } = process.env
 
 const PORT = process.env.PORT || 3000
 
@@ -18,6 +18,10 @@ const IMPORTER_API_URL = process.env.IMPORTER_API_URL || ''
 const DATABASE_URL = process.env.DATABASE_URL ||''
 
 const ADMINS = ['mluukkai', 'ttiittan', 'kurhila', 'vesuvesu', 'kemiko']
+
+const REDIS_CONFIG = {
+  url: `redis://default:redis@${REDIS_HOST}:6379`,
+}
 
 module.exports = {
   inE2EMode,
@@ -31,4 +35,5 @@ module.exports = {
   API_TOKEN,
   IMPORTER_API_URL,
   ADMINS,
+  REDIS_CONFIG,
 }
