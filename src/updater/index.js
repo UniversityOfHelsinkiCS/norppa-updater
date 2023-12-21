@@ -10,7 +10,6 @@ const {
 } = require('./updateCoursesAndTeacherFeedbackTargets')
 const {
   updateStudentFeedbackTargets,
-  updateNewEnrolments,
 } = require('./updateStudentFeedbackTargets')
 const { updateFeedbackTargetCounts } = require('./updateFeedbackTargetCounts')
 const { synchronizeInterimFeedbacks } = require('./synchronizeInterimFeedbacks')
@@ -26,29 +25,6 @@ const runUpdater = async () => {
   await updateStudentFeedbackTargets()
   await updateFeedbackTargetCounts()
   await synchronizeInterimFeedbacks()
-  await updateNewEnrolments()
-}
-
-const checkStatusOnStartup = async () => {
-  const statuses = await UpdaterStatus.findAll({
-    where: {
-      status: 'RUNNING',
-    },
-  })
-
-  if (!inProduction && statuses.length === 1) {
-    logger.info(`Server had a restart while updater was running, continuing ${statuses[0].jobType}`)
-    await runUpdater()
-  } else {
-    for (const status of statuses) {
-      status.status = 'INTERRUPTED'
-      status.finishedAt = new Date()
-      await status.save()
-      const msg = `Server had a restart while updater was running, interrupting ${status.jobType}`
-      Sentry.captureMessage(msg)
-      logger.error(`[UPDATER] ${msg}`)
-    }
-  }
 }
 
 const run = async () => {
@@ -78,6 +54,27 @@ const run = async () => {
   return logger.info('[UPDATER] Finished updating')
 }
 
+const continueRun = async (status) => {
+  logger.info('[UPDATER] Continuing interrupted updater run')
+
+  try {
+    await runUpdater()
+  } catch (error) {
+    Sentry.captureException(error)
+    Sentry.captureMessage('Updater run failed!')
+    status.status = 'FAILURE'
+    status.finishedAt = new Date()
+    await status.save()
+    return logger.error('[UPDATER] finished with error', error)
+  }
+
+  status.status = 'FINISHED'
+  status.finishedAt = new Date()
+  await status.save()
+
+  return logger.info('[UPDATER] Finished updating')
+}
+
 const start = async () => {
   if (!(inProduction || inStaging)) {
     logger.info('Starting development updater run')
@@ -90,6 +87,29 @@ const start = async () => {
   schedule(cronTime, run)
 
   logger.info('Running updater according to cron', { cron: cronTime })
+}
+
+const checkStatusOnStartup = async () => {
+  const statuses = await UpdaterStatus.findAll({
+    where: {
+      status: 'RUNNING',
+    },
+  })
+
+  if (inProduction && statuses.length === 1) {
+    const status = statuses[0]
+    logger.info(`Server had a restart while updater was running, continuing ${status.jobType}`)
+    await continueRun(status)
+  } else {
+    for (const status of statuses) {
+      status.status = 'INTERRUPTED'
+      status.finishedAt = new Date()
+      await status.save()
+      const msg = `Server had a restart while updater was running, interrupting ${status.jobType}`
+      Sentry.captureMessage(msg)
+      logger.error(`[UPDATER] ${msg}`)
+    }
+  }
 }
 
 const updater = {
