@@ -63,34 +63,6 @@ const commonFeedbackName = {
   sv: 'Allmän respons om kursen',
 }
 
-const findMatchingCourseUnit = async (course) => {
-  try {
-    const nonOpenCourse = await CourseUnit.findOne({
-      where: {
-        courseCode: course.code.substring(2),
-      },
-    })
-    if (nonOpenCourse) return nonOpenCourse
-    const regex = course.code.match('[0-9.]+')
-    if (!regex) {
-      logger.info('CODE WITH NO MATCH', { code: course.code })
-      return null
-    }
-    const charCode = course.code.substring(2, regex.index)
-    const sameOrg = await CourseUnit.findOne({
-      where: {
-        courseCode: {
-          [Op.iLike]: `${charCode}%`,
-        },
-      },
-    })
-    return sameOrg
-  } catch (_) {
-    logger.info('ERR', course)
-    return null
-  }
-}
-
 const createCourseUnits = async (courseUnits) => {
   const ids = new Set()
   const filteredCourseUnits = courseUnits
@@ -118,7 +90,6 @@ const createCourseUnits = async (courseUnits) => {
   })
 
   const courseUnitsOrganisations = courseUnits
-    .filter(({ code }) => !code.startsWith('AY'))
     .flatMap(({ id: courseUnitId, organisations }) =>
       organisations
         .filter(({ share, organisationId }) => share !== 0 && organisationId)
@@ -133,56 +104,6 @@ const createCourseUnits = async (courseUnits) => {
   await safeBulkCreate({
     entityName: 'CourseUnitsOrganisation',
     entities: courseUnitsOrganisations,
-    bulkCreate: async (entities, opt) =>
-      CourseUnitsOrganisation.bulkCreate(entities, opt),
-    fallbackCreate: async (entity, opt) =>
-      CourseUnitsOrganisation.upsert(entity, opt),
-    options: { ignoreDuplicates: true },
-  })
-
-  const openUniCourses = courseUnits.filter(({ code }) => code.startsWith('AY'))
-  const openCourseUnitsOrganisations = []
-  await openUniCourses.reduce(async (p, course) => {
-    await p
-    // try to find organisation for open uni course.
-    // 1st option find by course code without AY part.
-    // 2nd option find by course code without text part.
-    // 3rd option if not found then course is probably open uni course.
-    const nonOpenCourse = await findMatchingCourseUnit(course)
-    if (nonOpenCourse) {
-      const orgId = await CourseUnitsOrganisation.findOne({
-        where: {
-          courseUnitId: nonOpenCourse.id,
-          type: 'PRIMARY',
-        },
-      })
-      if (!orgId) {
-        logger.info('OLD COURSE UNIT', { oldCourseUnit: nonOpenCourse })
-        openCourseUnitsOrganisations.push({
-          type: 'PRIMARY',
-          courseUnitId: course.id,
-          organisationId: course.organisations[0].organisationId,
-        })
-      } else {
-        openCourseUnitsOrganisations.push({
-          type: 'PRIMARY',
-          courseUnitId: course.id,
-          organisationId: orgId.organisationId,
-        })
-      }
-    } else {
-      // Acual open course?
-      openCourseUnitsOrganisations.push({
-        type: 'PRIMARY',
-        courseUnitId: course.id,
-        organisationId: course.organisations[0].organisationId,
-      })
-    }
-  }, Promise.resolve())
-
-  await safeBulkCreate({
-    entityName: 'CourseUnitOrganisation',
-    entities: openCourseUnitsOrganisations,
     bulkCreate: async (entities, opt) =>
       CourseUnitsOrganisation.bulkCreate(entities, opt),
     fallbackCreate: async (entity, opt) =>
@@ -576,48 +497,10 @@ const coursesHandler = async (courses) => {
   await createInactiveCourseRealisations(inactiveCourseRealisations)
 }
 
-const courseUnitHandler = async (courseRealisations) => {
-  await createCourseUnits(
-    []
-      .concat(...courseRealisations.map((course) => course.courseUnits))
-      .filter(({ code }) => !code.startsWith('AY') && !code.match('^[0-9]+$')),
-  )
-}
-
-const openCourseUnitHandler = async (courseRealisations) => {
-  await createCourseUnits(
-    []
-      .concat(...courseRealisations.map((course) => course.courseUnits))
-      .filter(({ code }) => code.startsWith('AY') && !code.match('^AY[0-9]+$')),
-  )
-}
-
 // default 1000, set to 10 for example when debugging
 const SPEED = 1000
 
 const updateCoursesAndTeacherFeedbackTargets = async () => {
-  // This will become absolute mayhem because of open uni.
-  // What we have to do
-  // All non-open courses have to mangled first, because some open course could
-  // have the non-open version after the current batch.
-  // 1. Go through all non-open course_units
-  // 2. Go through all open course_units
-  // 3. Go through all course_units and only then create realisations.
-  // For each batch we ignore courses where code matches "[0-9]+" or "AY[0-9]+".
-
-  // HOW ITS DONE HERE SUCKS LOL. Everything is fetched 3 times, literally torturing importer. FIX PLS
-
-  await mangleData(
-    'course_unit_realisations_with_course_units',
-    SPEED,
-    courseUnitHandler,
-  )
-  await mangleData(
-    'course_unit_realisations_with_course_units',
-    SPEED,
-    openCourseUnitHandler,
-  )
-
   // Delete all teacher rights once a week (saturday-sunday night)
   if (new Date().getDay() === 0) {
     logger.info('[UPDATER] Deleting teacher rights', {})
