@@ -60,7 +60,7 @@ const deleteInactiveEnrolments = async (enrolments) => {
         feedbackTargetId: ufbt.feedbackTargetId,
         accessStatus: 'STUDENT',
         userCreated: false,
-        // feedbackOpenEmailSent: false,
+        feedbackOpenEmailSent: false,
         feedbackId: null,
       },
     })
