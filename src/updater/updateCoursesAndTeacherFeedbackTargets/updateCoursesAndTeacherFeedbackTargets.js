@@ -536,6 +536,10 @@ const getArchivedCoursesToDelete = async (courses) => {
 }
 
 const coursesHandler = async (courses) => {
+  // Filter out old AY courses. Already existing ones remain in db.
+  const courseUnits = [].concat(...courses.map((course) => course.courseUnits)).filter(({ code }) => code.startsWith('AY') && !code.match('^AY[0-9]+$'))
+  await createCourseUnits(courseUnits)
+
   const includeCurs = await getIncludeCurs()
 
   const filteredCourses = courses.filter(
