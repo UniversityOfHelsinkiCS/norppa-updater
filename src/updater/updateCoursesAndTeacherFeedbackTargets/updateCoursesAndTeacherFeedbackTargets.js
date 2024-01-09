@@ -435,14 +435,6 @@ const coursesHandler = async (courses) => {
 const SPEED = 1000
 
 const updateCoursesAndTeacherFeedbackTargets = async () => {
-  // Delete all teacher rights once a week (saturday-sunday night)
-  if (new Date().getDay() === 0) {
-    logger.info('[UPDATER] Deleting teacher rights', {})
-    await sequelize.query(
-      `DELETE FROM user_feedback_targets WHERE feedback_id IS NULL AND is_teacher(access_status) AND user_created = false AND user_id != 'abc1234'`,
-    )
-  }
-
   await mangleData(
     'course_unit_realisations_with_course_units',
     SPEED,
