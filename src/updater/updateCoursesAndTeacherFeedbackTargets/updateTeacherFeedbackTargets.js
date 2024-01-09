@@ -1,5 +1,7 @@
 const _ = require('lodash')
+const { Op } = require('sequelize')
 
+const { sequelize } = require('../../db/dbConnection')
 const { UserFeedbackTarget } = require('../../models')
 const { safeBulkCreate } = require('../util')
 
@@ -44,6 +46,23 @@ const getAccessStatus = (roleUrn, courseRealisation) => {
   return responsibleTeacherUrns.includes(roleUrn) ? 'RESPONSIBLE_TEACHER' : 'TEACHER'
 }
 
+// Remove old teacher feedback targets before creating new ones so that
+// relations removed from Sisu are removed from Norppa as well
+const removeOldTeacherFeedbackTargets = async (feedbackTargetsWithIds) => {
+  const feedbackTargetIds = feedbackTargetsWithIds.map(({ id }) => id)
+
+  await UserFeedbackTarget.destroy({
+    where: {
+      feedbackTargetId: {
+        [Op.in]: feedbackTargetIds,
+      },
+      accessStatus: {
+        [Op.in]: ['TEACHER', 'RESPONSIBLE_TEACHER'],
+      },
+    },
+  })
+}
+
 const updateTeacherFeedbackTargets = async (feedbackTargetsWithIds, teacherGroups, courseIdToPersonIds, courses) => {
   const userFeedbackTargets = []
     .concat(
@@ -64,14 +83,25 @@ const updateTeacherFeedbackTargets = async (feedbackTargetsWithIds, teacherGroup
     .sort(sortAccessStatus)
   
   const uniqueUfbts = _.uniqBy(userFeedbackTargets, ufbt => `${ufbt.userId}${ufbt.feedbackTargetId}`)
- 
-  await safeBulkCreate({
-    entityName: 'UserFeedbackTarget',
-    entities: uniqueUfbts,
-    bulkCreate: async (e, opts) => UserFeedbackTarget.bulkCreate(e, opts),
-    fallbackCreate: async (e, opts) => UserFeedbackTarget.upsert(e, opts),
-    options: { updateOnDuplicate: ["groupIds", "accessStatus", "isAdministrativePerson"] },
-  })
+
+  const t = await sequelize.transaction()
+
+  try {
+    await removeOldTeacherFeedbackTargets(feedbackTargetsWithIds)
+  
+    await safeBulkCreate({
+      entityName: 'UserFeedbackTarget',
+      entities: uniqueUfbts,
+      bulkCreate: async (e, opts) => UserFeedbackTarget.bulkCreate(e, opts),
+      fallbackCreate: async (e, opts) => UserFeedbackTarget.upsert(e, opts),
+      options: { updateOnDuplicate: ["groupIds", "accessStatus", "isAdministrativePerson"] },
+    })
+  
+    await t.commit()
+  } catch (err) {
+    await t.rollback()
+    throw err
+  }
 }
 
 module.exports = {
