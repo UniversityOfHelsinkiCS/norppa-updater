@@ -30,9 +30,30 @@ const runMigrations = async () => {
   })
 }
 
+const runDataMigrations = async () => {
+  const migrator = new Umzug({
+    storage: 'sequelize',
+    storageOptions: {
+      sequelize,
+      tableName: 'data_migrations',
+    },
+    migrations: {
+      params: [sequelize.getQueryInterface()],
+      path: `${process.cwd()}/src/data_migrations`,
+      pattern: /\.js$/,
+    },
+  })
+
+  const migrations = await migrator.up()
+  logger.info('Migrations up to date', {
+    files: migrations.map((mig) => mig.file),
+  })
+}
+
 const testConnection = async () => {
   await sequelize.authenticate()
   if (!(inStaging || inProduction)) await runMigrations()
+  await runDataMigrations()
 }
 
 // eslint-disable-next-line no-promise-executor-return
