@@ -65,7 +65,7 @@ const deleteInactiveEnrolments = async (enrolments) => {
       },
     })
 
-    if (deleted) logger.info('Deleted student feedback target', { userId: ufbt.userId, feedbackTargetId: ufbt.feedbackTargetId })
+    if (deleted) logger.debug('Deleted student feedback target', { userId: ufbt.userId, feedbackTargetId: ufbt.feedbackTargetId })
   })
 }
 
@@ -95,11 +95,12 @@ const createEnrolmentFallback = async (ufbt) => {
 }
 
 const enrolmentsHandler = async (enrolments) => {
-  const [activeEnrolments, inactiveEnrolments] = _.partition(enrolments, (enrolment) => enrolment.state === 'ENROLLED')
+  const [activeEnrolments, deletedEnrolments] = _.partition(enrolments, (enrolment) => enrolment.documentState === 'ACTIVE')
+  const [acceptedEnrolments, rejectedEnrolments] = _.partition(activeEnrolments, (enrolment) => enrolment.state === 'ENROLLED')
 
-  await deleteInactiveEnrolments(inactiveEnrolments)
+  await deleteInactiveEnrolments(deletedEnrolments.concat(rejectedEnrolments))
 
-  const userFeedbackTargets = await createEnrolmentTargets(activeEnrolments)
+  const userFeedbackTargets = await createEnrolmentTargets(acceptedEnrolments)
 
   const newUfbts = await safeBulkCreate({
     entityName: 'UserFeedbackTarget',
