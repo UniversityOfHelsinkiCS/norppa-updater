@@ -111,11 +111,9 @@ const enrolmentsHandler = async (enrolments) => {
 }
 
 const deletedEnrolmentsHandler = async (enrolments) => {
-  // This filter is not *needed*, the same filtering is done in importer
-  const deletedEnrolments = enrolments.filter((enrolment) => enrolment.status !== "ENROLLED")
-  await deleteInactiveEnrolments(deletedEnrolments)
+  await deleteInactiveEnrolments(enrolments)
 
-  return deletedEnrolments.length
+  return enrolments.length
 }
 
 /**
