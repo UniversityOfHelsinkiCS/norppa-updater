@@ -95,9 +95,7 @@ const createEnrolmentFallback = async (ufbt) => {
 }
 
 const enrolmentsHandler = async (enrolments) => {
-  // This filter is not *needed*, the same filtering is done in importer
-  const acceptedEnrolments = enrolments.filter((enrolment) => enrolment.status === "ENROLLED" && enrolment.documentState === "ACTIVE")
-  const userFeedbackTargets = await createEnrolmentTargets(acceptedEnrolments)
+  const userFeedbackTargets = await createEnrolmentTargets(enrolments)
 
   const newUfbts = await safeBulkCreate({
     entityName: 'UserFeedbackTarget',
