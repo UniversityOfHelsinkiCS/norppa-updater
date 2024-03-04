@@ -95,7 +95,7 @@ const createEnrolmentFallback = async (ufbt) => {
 }
 
 const enrolmentsHandler = async (enrolments) => {
-  // This filter is not needed, the same filtering is done in importer
+  // This filter is not *needed*, the same filtering is done in importer
   const acceptedEnrolments = enrolments.filter((enrolment) => enrolment.status === "ENROLLED" && enrolment.documentState === "ACTIVE")
   const userFeedbackTargets = await createEnrolmentTargets(acceptedEnrolments)
 
@@ -111,20 +111,33 @@ const enrolmentsHandler = async (enrolments) => {
 }
 
 const deletedEnrolmentsHandler = async (enrolments) => {
-  // This filter is not needed, the same filtering is done in importer
-  const deletedEnrolments = enrolments.filter((enrolment) => enrolment.status !== "ENROLLED" && enrolment.documentState === "ACTIVE")
+  // This filter is not *needed*, the same filtering is done in importer
+  const deletedEnrolments = enrolments.filter((enrolment) => enrolment.status !== "ENROLLED")
   await deleteInactiveEnrolments(deletedEnrolments)
 
   return deletedEnrolments.length
 }
 
+/**
+ * Deletes and creates UFBTs from deleted-enrolments and enrolments
+ * 
+ * It is important to first delete the deleted UFBTs and then create the existing ones, 
+ * because the same UFBT can be in both lists.
+ * 
+ * Deleted enrolments can contain documents that are not actually deleted, 
+ * but are in document_state DELETED and status NOT_ENROLLED (meaning the enrolment state NOT_ENROLLED is not valid anymore).
+ * 
+ * Then if the enrolment has also a document in document_state ACTIVE and status ENROLLED,
+ * it will be created in the second step and everything is fine.
+ */
 const updateStudentFeedbackTargets = async () => {
   // Date from onwards the fbts are to be updated
   const getDataSince = new Date()
   getDataSince.setFullYear(getDataSince.getFullYear() - 2)
 
-  // await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
+  // This order is important
   await mangleData('deleted-enrolments', 10_000, deletedEnrolmentsHandler, getDataSince)
+  await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
 }
 
 const updateEnrolmentsOfCourse = async (courseRealisationId) => {
