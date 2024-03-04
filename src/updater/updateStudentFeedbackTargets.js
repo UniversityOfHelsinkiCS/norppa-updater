@@ -95,11 +95,8 @@ const createEnrolmentFallback = async (ufbt) => {
 }
 
 const enrolmentsHandler = async (enrolments) => {
-  const [activeEnrolments, deletedEnrolments] = _.partition(enrolments, (enrolment) => enrolment.documentState === 'ACTIVE')
-  const [acceptedEnrolments, rejectedEnrolments] = _.partition(activeEnrolments, (enrolment) => enrolment.state === 'ENROLLED')
-
-  await deleteInactiveEnrolments(deletedEnrolments.concat(rejectedEnrolments))
-
+  // This filter is not needed, the same filtering is done in importer
+  const acceptedEnrolments = enrolments.filter((enrolment) => enrolment.status === "ENROLLED" && enrolment.documentState === "ACTIVE")
   const userFeedbackTargets = await createEnrolmentTargets(acceptedEnrolments)
 
   const newUfbts = await safeBulkCreate({
@@ -113,12 +110,21 @@ const enrolmentsHandler = async (enrolments) => {
   return newUfbts.length
 }
 
+const deletedEnrolmentsHandler = async (enrolments) => {
+  // This filter is not needed, the same filtering is done in importer
+  const deletedEnrolments = enrolments.filter((enrolment) => enrolment.status !== "ENROLLED" && enrolment.documentState === "ACTIVE")
+  await deleteInactiveEnrolments(deletedEnrolments)
+
+  return deletedEnrolments.length
+}
+
 const updateStudentFeedbackTargets = async () => {
   // Date from onwards the fbts are to be updated
   const getDataSince = new Date()
   getDataSince.setFullYear(getDataSince.getFullYear() - 2)
 
-  await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
+  // await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
+  await mangleData('deleted-enrolments', 10_000, deletedEnrolmentsHandler, getDataSince)
 }
 
 const updateEnrolmentsOfCourse = async (courseRealisationId) => {
