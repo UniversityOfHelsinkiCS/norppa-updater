@@ -19,9 +19,9 @@ const JOB_TYPE = 'NIGHTLY'
 
 const runUpdater = async () => {
   // Dependencies between updating, may result in failure if order not kept
-  // await updateUsers()
-  // await updateOrganisations()
-  // await updateCoursesAndTeacherFeedbackTargets()
+  await updateUsers()
+  await updateOrganisations()
+  await updateCoursesAndTeacherFeedbackTargets()
   await updateStudentFeedbackTargets()
   await updateFeedbackTargetCounts()
   await synchronizeInterimFeedbacks()
