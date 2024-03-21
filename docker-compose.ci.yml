@@ -1,0 +1,23 @@
+version: '3.5'
+
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: norppa-updater-test
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+      - PORT=3003
+      - NODE_ENV=test
+    ports:
+      - 8000:3003
+    container_name: norppa-updater-test
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=postgres
+    container_name: jami_db

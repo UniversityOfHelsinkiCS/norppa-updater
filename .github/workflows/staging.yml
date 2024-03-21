@@ -6,6 +6,41 @@ on:
       - master
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - uses: docker/setup-buildx-action@v2
+
+      - name: Build image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: norppa-updater:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start the application
+        run: docker-compose -f docker-compose.ci.yml up -d
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: echo "Waiting 6 seconds before starting..." && sleep 6 && npm test
+
+      - name: Output application logs on failure
+        if: failure()
+        run: docker-compose -f docker-compose.ci.yml logs -t --tail=100
+    
   build-and-push:
     runs-on: ubuntu-latest
 
