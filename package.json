@@ -7,7 +7,7 @@
     "start": "docker compose up",
     "start:dev": "NODE_ENV=development nodemon src/index.js",
     "start:prod": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "lint": "eslint src/**/*",
     "sync": "./scripts/sync_code.sh ../palaute"
   },
@@ -46,6 +46,16 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.2.1",
     "nodemon": "^2.0.20",
-    "prettier": "^2.8.1"
+    "prettier": "^2.8.1",
+    "vitest": "^1.4.0"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "tests"
+    ],
+    "watch": [
+      "src"
+    ],
+    "ext": "*.js,*.ts,*.json"
   }
 }
