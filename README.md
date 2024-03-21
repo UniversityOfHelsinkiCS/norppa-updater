@@ -19,6 +19,6 @@ Create a `.env` file inside the project's root directory. In that file, copy the
 
 ## Synchronize Norppa code
 
-Norppa-updater uses the same Sequelize model definitions as acual Norppa. Use the script `./scripts/sync_code.sh` 
+Norppa-updater uses the same Sequelize model definitions as acual Norppa. Use the script `npm run sync` 
 to copy Norppa model definitions to norppa-updater, assuming that the Norppa repository is in the directory
 `../palaute`.

@@ -7,7 +7,7 @@ const GIT_SHA = process.env.REACT_APP_GIT_SHA || ''
 
 const { API_TOKEN, REDIS_HOST } = process.env
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3003
 
 const NODE_ENV = process.env.NODE_ENV || 'development'
 

@@ -12,7 +12,7 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
       - REDIS_HOST=redis
     ports:
-      - 8000:3000
+      - 8000:3003
     container_name: updater-dev
   db:
     image: postgres:13.2
