@@ -3,7 +3,6 @@ const { format } = require("date-fns")
 
 const { FeedbackTarget, UserFeedbackTarget, Feedback } = require("../../models")
 
-const formatDate = (date) => format(date, 'yyyy-MM-dd')
 const formatWithHours = (date) => format(date, 'yyyy-MM-dd HH:mm:ss')
 
 const getFeedbackCount = async (courseRealisationId) => {
@@ -35,7 +34,6 @@ const getFeedbackCount = async (courseRealisationId) => {
 }
 
 module.exports = {
-  formatDate,
   formatWithHours,
   getFeedbackCount,
 }
