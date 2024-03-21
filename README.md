@@ -16,3 +16,9 @@ Copy models and migrations from `../palaute` with `npm run sync`. One should not
 
 ## Environment configuration
 Create a `.env` file inside the project's root directory. In that file, copy the contents of the `.env.template` file and add correct values for the variables based on the documentation.
+
+## Synchronize Norppa code
+
+Norppa-updater uses the same Sequelize model definitions as acual Norppa. Use the script `./scripts/sync_code.sh` 
+to copy Norppa model definitions to norppa-updater, assuming that the Norppa repository is in the directory
+`../palaute`.
