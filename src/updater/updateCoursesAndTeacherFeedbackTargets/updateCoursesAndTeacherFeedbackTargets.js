@@ -294,6 +294,8 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
 
   const feedbackTargetIds = feedbackTargets.map((target) => target.id)
 
+  logger.info(`Starting to delete fbts with the following cur ids: ${courseRealisationIds}`)
+
   const destroyedUserFeedbackTargets = await UserFeedbackTarget.destroy({
     where: {
       feedbackTargetId: {
