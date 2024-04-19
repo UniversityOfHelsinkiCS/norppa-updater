@@ -54,7 +54,6 @@ const start = async () => {
   await initializeFunctions()
   await redis.connect()
   await updater.checkStatusOnStartup()
-  await updater.run()
   await updater.start()
   await startEnrolmentsCron()
 
