@@ -1,4 +1,5 @@
 const dateFns = require('date-fns')
+const { stringSimilarity } = require("string-similarity-js")
 const { parseFromTimeZone } = require('date-fns-timezone')
 const { Op } = require('sequelize')
 const _ = require('lodash')
@@ -112,27 +113,35 @@ const getIncludeCurs = async () => {
 }
 
 // Find the newest course unit that has started before the course realisation
-const getCourseUnit = ({ activityPeriod, courseUnits }) => {
-  let courseUnit = courseUnits[0] // old default
-
+const getCourseUnit = ({ activityPeriod, courseUnits, name }) => {
   const { startDate: realisationStartDate } = activityPeriod
 
-  courseUnits.sort((a, b) => {
-    const { startDate: aStartDate } = a.validityPeriod
-    const { startDate: bStartDate } = b.validityPeriod
+  const scientificallyAccurateCUs = courseUnits.map((courseUnit) => {
+    const getSimilarityRanking = (language) => stringSimilarity(name[language] ?? '', courseUnit.name[language] ?? '')
+    
+    const fiSimilarity = getSimilarityRanking('fi') 
+    const enSimilarity = getSimilarityRanking('en')
+    const svSimilarity = getSimilarityRanking('sv') 
 
-    if (!aStartDate || !bStartDate) return 0
+    const similarityRanking = Math.max(fiSimilarity, enSimilarity, svSimilarity)
 
-    return dateFns.isAfter(new Date(aStartDate), new Date(bStartDate)) ? -1 : 1
+    return ({ ...courseUnit, similarityRanking })
   })
 
-  courseUnit = courseUnits.find(({ validityPeriod }) => {
+  const sortedCourseUnits = _.orderBy(scientificallyAccurateCUs, ['similarityRanking', (cu) => {
+    const { startDate } = cu.validityPeriod.startDate
+
+    return Date.parse(startDate)
+  }], ['desc', 'desc'])
+
+
+  const courseUnit = sortedCourseUnits.find(({ validityPeriod }) => {
     const { startDate } = validityPeriod
 
     if (!startDate) return false
 
     return dateFns.isAfter(new Date(realisationStartDate), new Date(startDate))
-  }) ?? courseUnit
+  }) ?? sortedCourseUnits[0]
 
   return courseUnit
 }
