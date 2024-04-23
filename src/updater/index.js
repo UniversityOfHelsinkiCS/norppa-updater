@@ -19,7 +19,9 @@ const JOB_TYPE = 'NIGHTLY'
 
 const runUpdater = async () => {
   // Dependencies between updating, may result in failure if order not kept
-  await updateUsers()
+  await updateUsers() 
+  // Note: if importer updates data after updateUsers but before updateStudentFeedbackTargets, you may get a foreign key constraint error. 
+  // Its not a huge problem, just run the updater again or wait for the next cron.
   await updateOrganisations()
   await updateCoursesAndTeacherFeedbackTargets()
   await updateStudentFeedbackTargets()
