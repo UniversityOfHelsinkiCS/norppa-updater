@@ -116,6 +116,15 @@ const getIncludeCurs = async () => {
 const getCourseUnit = ({ activityPeriod, courseUnits, name }) => {
   const { startDate: realisationStartDate } = activityPeriod
 
+  const latestCourseUnit = courseUnits.sort((a, b) => {
+    const { startDate: aStartDate } = a.validityPeriod
+    const { startDate: bStartDate } = b.validityPeriod
+
+    if (!aStartDate || !bStartDate) return 0
+
+    return dateFns.isAfter(new Date(aStartDate), new Date(bStartDate)) ? -1 : 1
+  })[0]
+
   const scientificallyAccurateCUs = courseUnits.map((courseUnit) => {
     const getSimilarityRanking = (language) => stringSimilarity(name[language] ?? '', courseUnit.name[language] ?? '')
     
@@ -143,7 +152,8 @@ const getCourseUnit = ({ activityPeriod, courseUnits, name }) => {
     return dateFns.isAfter(new Date(realisationStartDate), new Date(startDate))
   }) ?? sortedCourseUnits[0]
 
-  return courseUnit
+
+  return latestCourseUnit.code === courseUnit.code ? latestCourseUnit : courseUnit
 }
 
 const getResponsibilityInfos = (_courseUnit, courseRealisation) => {
