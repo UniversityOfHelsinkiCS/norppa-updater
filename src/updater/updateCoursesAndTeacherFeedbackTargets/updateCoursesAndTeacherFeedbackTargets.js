@@ -112,7 +112,8 @@ const getIncludeCurs = async () => {
   return includeCurs.map(({ id }) => id)
 }
 
-// Find the newest course unit that has started before the course realisation
+// Find the correct course unit for the course realisation.
+// For courses that have different name in different languages, the course unit with the highest similarity ranking is chosen.
 const getCourseUnit = ({ activityPeriod, courseUnits, name }) => {
   const { startDate: realisationStartDate } = activityPeriod
 
