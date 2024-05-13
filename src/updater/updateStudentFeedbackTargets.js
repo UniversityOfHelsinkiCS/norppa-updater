@@ -132,8 +132,8 @@ const updateStudentFeedbackTargets = async () => {
   getDataSince.setFullYear(getDataSince.getFullYear() - 2)
 
   // This order is important
-  await mangleData('deleted-enrolments', 10_000, deletedEnrolmentsHandler, getDataSince)
-  await mangleData('enrolments', 10_000, enrolmentsHandler, getDataSince)
+  await mangleData('deleted-enrolments', 1_000, deletedEnrolmentsHandler, getDataSince)
+  await mangleData('enrolments', 1_000, enrolmentsHandler, getDataSince)
 }
 
 const updateEnrolmentsOfCourse = async (courseRealisationId) => {
