@@ -60,17 +60,17 @@ const hasSisuLikeNamingConvention = (id) => id.startsWith('otm-') || id.startsWi
 const isOptimeOriginatingId = (id) => id && id.startsWith('hy-opt-cur-')
 
 const courseNameWithCourseType = (name, type, lang) => {
-  const nameTranslated = typeof (name) === 'string' ? name : getLanguageValue(name, lang);
-  const typeTranslated = typeof (type) === 'string' ? type : getLanguageValue(type, lang);
+  const nameTranslated = typeof (name) === 'string' ? name : getLanguageValue(name, lang)
+  const typeTranslated = typeof (type) === 'string' ? type : getLanguageValue(type, lang)
 
   if (!nameTranslated) {
-    return typeTranslated;
+    return typeTranslated
   }
   if (!typeTranslated) {
-    return nameTranslated;
+    return nameTranslated
   }
-  return `${nameTranslated}, ${typeTranslated}`;
-};
+  return `${nameTranslated}, ${typeTranslated}`
+}
 
 /**
  * Translate and format course name.
@@ -89,11 +89,11 @@ const courseNameWithCourseType = (name, type, lang) => {
  */
 const formatCourseName = (id, name, nameSpecifier, lang) => {
   if (hasSisuLikeNamingConvention(id)) {
-    return courseNameWithCourseType(nameSpecifier, name, lang);
+    return courseNameWithCourseType(nameSpecifier, name, lang)
   } if (isOptimeOriginatingId(id)) {
-    return courseNameWithCourseType(name, null, lang);
+    return courseNameWithCourseType(name, null, lang)
   }
-  return courseNameWithCourseType(name, nameSpecifier, lang);
+  return courseNameWithCourseType(name, nameSpecifier, lang)
 }
 
 module.exports = {
