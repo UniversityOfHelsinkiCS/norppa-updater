@@ -33,7 +33,7 @@ const getFeedbackCount = async (courseRealisationId) => {
   return feedbackCount
 }
 
-export const getLanguageValue = (values, preferred) => {
+const getLanguageValue = (values, preferred) => {
   if (!values) {
     return null
   }
