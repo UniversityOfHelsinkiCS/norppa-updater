@@ -2,7 +2,7 @@ const { parseFromTimeZone } = require("date-fns-timezone")
 const dateFns = require('date-fns')
 const { CourseRealisation, CourseRealisationsOrganisation, InactiveCourseRealisation } = require("../../models")
 const { safeBulkCreate } = require("../util")
-const { formatWithHours } = require("./utils")
+const { formatWithHours, formatCourseName } = require("./utils")
 const logger = require("../../util/logger")
 
 const getCourseRealisationPeriod = (activityPeriod) => {
@@ -91,13 +91,21 @@ const createCourseRealisations = async (courseRealisations) => {
   for (const {
     id,
     name,
+    nameSpecifier,
     activityPeriod,
     organisations,
     customCodeUrns,
   } of courseRealisations) {
+
+    const courseRealisationName = {
+      fi: formatCourseName(id, name, nameSpecifier, 'fi'),
+      en: formatCourseName(id, name, nameSpecifier, 'en'),
+      sv: formatCourseName(id, name, nameSpecifier, 'sv'),
+    }
+
     await CourseRealisation.upsert({
       id,
-      name,
+      name: courseRealisationName,
       ...getCourseRealisationPeriod(activityPeriod),
       educationalInstitutionUrn: getEducationalInstitutionUrn(organisations),
       isMoocCourse: isMoocCourse(customCodeUrns),
