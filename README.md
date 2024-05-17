@@ -14,6 +14,42 @@ Importer url can be freely configured to point to the staging/production instanc
 
 Copy models and migrations from `../palaute` with `npm run sync`. One should not edit the files here, instead commit to palaute
 
+### Easing the pain
+
+You might not want to run updater completely when doing tunkkaus so you might comment out some of the update functions from the [runUpdater function](src/updater/index.js).
+
+Example:
+
+Skipping user and organisation updates to start the updater from the function call `updateCoursesAndTeacherFeedbackTargets()`.
+
+**However** it is mandatory to run the updater completely at least once to get all of the data in to the database.
+
+```javascript
+const runUpdater = async () => {
+  // Dependencies between updating, may result in failure if order not kept
+  // await updateUsers() 
+  // Note: if importer updates data after updateUsers but before updateStudentFeedbackTargets, you may get a foreign key constraint error. 
+  // Its not a huge problem, just run the updater again or wait for the next cron.
+  // await updateOrganisations()
+  await updateCoursesAndTeacherFeedbackTargets()
+  await updateStudentFeedbackTargets()
+  await updateFeedbackTargetCounts()
+  await synchronizeInterimFeedbacks()
+}
+```
+
+### Running updater with Norppa locally
+
+If you wish to run updater with Norppa locally to confirm changes you need to enable the updater service in [Norppa](https://github.com/UniversityOfHelsinkiCS/palaute/blob/08b7588f831b743bb4aca20eea8475b4830ad503/docker-compose.yml#L64-L76)
+
+For this Norppa and Updater directories much be adjacent in the same directory on your machine.
+
+```
+├── root directory (for example Repositories)
+│   ├── norppa-updater
+│   ├── palaute
+```
+
 ## Environment configuration
 Create a `.env` file inside the project's root directory. In that file, copy the contents of the `.env.template` file and add correct values for the variables based on the documentation.
 
