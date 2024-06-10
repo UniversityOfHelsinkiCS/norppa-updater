@@ -6,7 +6,7 @@
   "scripts": {
     "start": "docker compose up",
     "start:dev": "NODE_ENV=development nodemon src/index.js",
-    "start:prod": "node src/index.js",
+    "start:prod": "node --max-old-space-size=4096 src/index.js",
     "test": "vitest",
     "lint": "eslint src/**/*",
     "sync": "./scripts/sync_code.sh ../palaute"
