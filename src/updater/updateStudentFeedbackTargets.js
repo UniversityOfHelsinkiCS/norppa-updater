@@ -13,12 +13,11 @@ const getEnrolmentFeedbackTargets = async (enrolments) => {
 
   const feedbackTargets = await FeedbackTarget.findAll({
     where: {
-      feedbackType: 'courseRealisation',
-      typeId: {
+      courseRealisationId: {
         [Op.in]: courseUnitRealisationIds
       },
     },
-    attributes: ['id', 'typeId'],
+    attributes: ['id', 'courseRealisationId'],
   })
 
   return feedbackTargets
@@ -29,7 +28,7 @@ const createEnrolmentTargets = async (enrolments) => {
 
   const enrolmentsByCourseUnitRealisationId = _.groupBy(enrolments, 'courseUnitRealisationId')
 
-  const userFeedbackTargets = feedbackTargets.flatMap((feedbackTarget) => enrolmentsByCourseUnitRealisationId[feedbackTarget.typeId].map((enrolment) => ({
+  const userFeedbackTargets = feedbackTargets.flatMap((feedbackTarget) => enrolmentsByCourseUnitRealisationId[feedbackTarget.courseRealisationId].map((enrolment) => ({
       accessStatus: 'STUDENT',
       userId: enrolment.personId,
       feedbackTargetId: feedbackTarget.id,
@@ -44,10 +43,11 @@ const createEnrolmentTargets = async (enrolments) => {
 
 const deleteInactiveEnrolments = async (enrolments) => {
   const feedbackTargets = await getEnrolmentFeedbackTargets(enrolments)
+  logger.info(`Trying to delete ${enrolments.length} inactive enrolments for ${feedbackTargets.length} feedback targets`)
 
   const enrolmentsByCourseUnitRealisationId = _.groupBy(enrolments, 'courseUnitRealisationId')
 
-  const userFeedbackTargetsToDelete = feedbackTargets.flatMap((feedbackTarget) => enrolmentsByCourseUnitRealisationId[feedbackTarget.typeId].map((enrolment) => ({
+  const userFeedbackTargetsToDelete = feedbackTargets.flatMap((feedbackTarget) => enrolmentsByCourseUnitRealisationId[feedbackTarget.courseRealisationId].map((enrolment) => ({
       userId: enrolment.personId,
       feedbackTargetId: feedbackTarget.id,
     }))
