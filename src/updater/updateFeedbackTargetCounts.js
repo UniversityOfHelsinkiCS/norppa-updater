@@ -32,40 +32,11 @@ const updateHiddenCount = async () => {
   return { updates: countsById?.length }
 }
 
-const updateFeedbackCount = async () => {
-  const countsById = await sequelize.query(
-    `
-    SELECT feedback_target_id as id, COUNT(*)
-    FROM user_feedback_targets
-    WHERE feedback_id IS NOT NULL
-    GROUP BY feedback_target_id
-  `,
-    { type: QueryTypes.SELECT },
-  )
-
-  if (Array.isArray(countsById)) {
-    for (const { id, count } of countsById) {
-      await FeedbackTarget.update(
-        {
-          feedbackCount: count,
-        },
-        { where: { id } },
-      )
-    }
-  }
-
-  return { updates: countsById?.length }
-}
-
 const updateFeedbackTargetCounts = async () => {
   logger.info('[UPDATER] starting to update feedbackTargetCounts')
   await logOperation(
     updateHiddenCount,
     '[UPDATER][feedbackTargetCounts] updated hiddenCounts',
-  )
-  await logOperation(
-    updateFeedbackCount,
-    '[UPDATER][feedbackTargetCounts] updated feedbackCounts',
   )
 }
 
