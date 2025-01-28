@@ -7,6 +7,7 @@ const { FeedbackTarget, UserFeedbackTarget } = require('../models')
 const logger = require('../util/logger')
 const mangleData = require('./mangleData')
 const { fetchData } = require('./importerClient')
+const { sequelize } = require('../db/dbConnection')
 
 const getEnrolmentFeedbackTargets = async (enrolments) => {
   const courseUnitRealisationIds = enrolments.map(({ courseUnitRealisationId }) => courseUnitRealisationId)
@@ -53,7 +54,9 @@ const deleteInactiveEnrolments = async (enrolments) => {
     }))
   )
 
-  userFeedbackTargetsToDelete.forEach(async (ufbt) => {
+  const transaction = await sequelize.transaction()
+
+  await Promise.all(userFeedbackTargetsToDelete.map(async (ufbt) => {
     const deleted = await UserFeedbackTarget.destroy({
       where: {
         userId: ufbt.userId,
@@ -63,10 +66,13 @@ const deleteInactiveEnrolments = async (enrolments) => {
         feedbackOpenEmailSent: false,
         feedbackId: null,
       },
+      transaction,
     })
 
     if (deleted) logger.debug('Deleted student feedback target', { userId: ufbt.userId, feedbackTargetId: ufbt.feedbackTargetId })
-  })
+  }))
+
+  await transaction.commit()
 }
 
 const createEnrolmentFallback = async (ufbt) => {
