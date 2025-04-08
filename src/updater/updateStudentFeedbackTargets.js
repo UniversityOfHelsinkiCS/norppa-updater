@@ -44,7 +44,6 @@ const createEnrolmentTargets = async (enrolments) => {
 
 const deleteInactiveEnrolments = async (enrolments) => {
   const feedbackTargets = await getEnrolmentFeedbackTargets(enrolments)
-  logger.info(`Trying to delete ${enrolments.length} inactive enrolments for ${feedbackTargets.length} feedback targets`)
 
   const enrolmentsByCourseUnitRealisationId = _.groupBy(enrolments, 'courseUnitRealisationId')
 
