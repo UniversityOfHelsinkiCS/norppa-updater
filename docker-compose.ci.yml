@@ -24,6 +24,6 @@ services:
     container_name: updater-db
 
   redis:
-    image: redis:6.2.6
+    image: redis:7.4.3
     command: redis-server
     container_name: updater-redis
