@@ -1,11 +1,14 @@
 const os = require('os')
 
 const winston = require('winston')
+const LokiTransport = require('winston-loki')
 const { WinstonGelfTransporter } = require('winston-gelf-transporter')
 
 const { inProduction } = require('./config')
 
 const { combine, timestamp, printf, splat } = winston.format
+
+const LOKI_HOST = 'http://loki-svc.toska-lokki.svc.cluster.local:3100'
 
 const transports = []
 
@@ -46,6 +49,13 @@ if (inProduction) {
   )
 
   transports.push(new winston.transports.Console({ format: prodFormat }))
+
+  transports.push(
+    new LokiTransport({
+      host: LOKI_HOST,
+      labels: { app: 'norppa-updater', environment: process.env.NODE_ENV || 'production' }
+    })
+  )
 
   transports.push(
     new WinstonGelfTransporter({
