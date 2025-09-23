@@ -38,12 +38,13 @@ const validRealisationTypes = [
   { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-blended', },
   { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-contact', },
   { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-distance', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', organisationIds: ['hy-org-1000003401'] }, // language center
+  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', organisationIds: ['hy-org-1000003401'], } // language center
 ]
 
 const inactiveRealisationTypes = [
-  'urn:code:course-unit-realisation-type:independent-work-essay',
-  'urn:code:course-unit-realisation-type:training-training',
+  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', excludeOrganisationIds: ['hy-org-1000003401'], },
+  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-essay', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:training-training', }
 ]
 
 const commonFeedbackName = {
@@ -427,6 +428,21 @@ const isValidRealisationType = (course) => {
   })
 }
 
+const isInactiveRealisationType = (course) => {
+  return inactiveRealisationTypes.some( realisationType => {
+    // realisationType does not match?
+    if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
+    // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
+    // See inactiveRealisationTypes above
+    if (realisationType.organisationIds) {
+      const courseOrgIds = course.organisations.map(org => org.id)
+      if (_.intersection(courseOrgIds, realisationType.organisationIds).length > 0) return false
+    }
+
+    return true
+  })
+}
+
 const coursesHandler = async (courses) => {
   // Filter out old AY courses. Already existing ones remain in db.
   const courseUnits = courses
@@ -464,7 +480,7 @@ const coursesHandler = async (courses) => {
   const inactiveCourseRealisations = courses.filter(
     (course) =>
       course.courseUnits.length &&
-      inactiveRealisationTypes.includes(course.courseUnitRealisationTypeUrn) &&
+      isInactiveRealisationType(course) &&
       course.flowState !== 'CANCELLED',
   )
 
