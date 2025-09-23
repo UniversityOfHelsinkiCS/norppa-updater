@@ -28,20 +28,20 @@ const { createStudyGroups } = require('./createStudyGroups')
 const { updateTeacherFeedbackTargets } = require('./updateTeacherFeedbackTargets')
 
 const validRealisationTypes = [
-  'urn:code:course-unit-realisation-type:teaching-participation-lab',
-  'urn:code:course-unit-realisation-type:teaching-participation-online',
-  'urn:code:course-unit-realisation-type:teaching-participation-field-course',
-  'urn:code:course-unit-realisation-type:teaching-participation-project',
-  'urn:code:course-unit-realisation-type:teaching-participation-lectures',
-  'urn:code:course-unit-realisation-type:teaching-participation-small-group',
-  'urn:code:course-unit-realisation-type:teaching-participation-seminar',
-  'urn:code:course-unit-realisation-type:teaching-participation-blended',
-  'urn:code:course-unit-realisation-type:teaching-participation-contact',
-  'urn:code:course-unit-realisation-type:teaching-participation-distance',
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lab', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-online', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-field-course', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-project', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lectures', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-small-group', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-seminar', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-blended', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-contact', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-distance', },
+  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', organisationIds: ['hy-org-1000003401'] }, // language center
 ]
 
 const inactiveRealisationTypes = [
-  'urn:code:course-unit-realisation-type:independent-work-project',
   'urn:code:course-unit-realisation-type:independent-work-essay',
   'urn:code:course-unit-realisation-type:training-training',
 ]
@@ -412,6 +412,21 @@ const getArchivedCoursesToDelete = async (courses) => {
   return archivedCoursesWithoutFeedback
 }
 
+const isValidRealisationType = (course) => {
+  return validRealisationTypes.some( realisationType => {
+    // realisationType does not match?
+    if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
+    // If realisationType has organisationIds defined, check that they overlap with course's organisation ids
+    // See validRealisationTypes above
+    if (realisationType.organisationIds) {
+      const courseOrgIds = course.organisations.map(org => org.id)
+      if (_.intersection(courseOrgIds, realisationType.organisationIds).length === 0) return false
+    }
+
+    return true
+  })
+}
+
 const coursesHandler = async (courses) => {
   // Filter out old AY courses. Already existing ones remain in db.
   const courseUnits = courses
@@ -426,7 +441,7 @@ const coursesHandler = async (courses) => {
     (course) =>
       includeCurs.includes(course.id) ||
       (course.courseUnits.length &&
-        validRealisationTypes.includes(course.courseUnitRealisationTypeUrn) &&
+        isValidRealisationType(course) &&
         course.flowState !== 'CANCELLED' && course.flowState !== 'ARCHIVED'),
   )
 
