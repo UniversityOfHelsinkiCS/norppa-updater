@@ -89,6 +89,7 @@ const createInactiveCourseRealisations = async (inactiveCourseRealisations) => {
 }
 
 const deleteInactiveCourseRealisations = async (courseRealisations) => {
+  logger.info(`Deleting ${courseRealisations.length} inactive course realisations`)
   await InactiveCourseRealisation.destroy({
     where: {
       id: {

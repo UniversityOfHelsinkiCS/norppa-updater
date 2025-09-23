@@ -490,7 +490,9 @@ const coursesHandler = async (courses) => {
 
   await createInactiveCourseRealisations(inactiveCourseRealisations)
   // Delete inactive course realisations that are acually active
-  await deleteInactiveCourseRealisations(passesBothFilters)
+  if (passesBothFilters.length > 0) {
+    await deleteInactiveCourseRealisations(passesBothFilters)
+  }
 }
 
 // default 1000, set to 10 for example when debugging
