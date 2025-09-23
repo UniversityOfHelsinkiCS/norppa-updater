@@ -22,7 +22,7 @@ const logger = require('../../util/logger')
 const mangleData = require('../mangleData')
 const { sequelize } = require('../../db/dbConnection')
 const { safeBulkCreate } = require('../util')
-const { createCourseRealisations, createInactiveCourseRealisations } = require('./createCourseRealisations')
+const { createCourseRealisations, createInactiveCourseRealisations, deleteInactiveCourseRealisations } = require('./createCourseRealisations')
 const { formatWithHours, getFeedbackCount } = require('./utils')
 const { createStudyGroups } = require('./createStudyGroups')
 const { updateTeacherFeedbackTargets } = require('./updateTeacherFeedbackTargets')
@@ -453,13 +453,17 @@ const coursesHandler = async (courses) => {
 
   const includeCurs = await getIncludeCurs()
 
-  const filteredCourses = courses.filter(
-    (course) =>
-      includeCurs.includes(course.id) ||
-      (course.courseUnits.length &&
-        isValidRealisationType(course) &&
-        course.flowState !== 'CANCELLED' && course.flowState !== 'ARCHIVED'),
+  const norppaEnabledCourses = courses.filter(course => includeCurs.includes(course.id))
+
+  const sisuFilteredCourses = courses.filter(course =>
+    course.courseUnits.length &&
+    isValidRealisationType(course) &&
+    course.flowState !== 'CANCELLED' && course.flowState !== 'ARCHIVED'
   )
+
+  const filteredCourses = _.uniqBy(norppaEnabledCourses.concat(sisuFilteredCourses), 'id')
+
+  const passesBothFilters = _.intersectionBy(norppaEnabledCourses, sisuFilteredCourses, 'id')
 
   const cancelledCourses = courses.filter(
     (course) => course.flowState === 'CANCELLED',
@@ -485,6 +489,8 @@ const coursesHandler = async (courses) => {
   )
 
   await createInactiveCourseRealisations(inactiveCourseRealisations)
+  // Delete inactive course realisations that are acually active
+  await deleteInactiveCourseRealisations(passesBothFilters)
 }
 
 // default 1000, set to 10 for example when debugging

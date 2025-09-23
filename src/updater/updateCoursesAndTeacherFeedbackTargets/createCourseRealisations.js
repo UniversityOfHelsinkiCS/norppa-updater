@@ -1,5 +1,6 @@
 const { parseFromTimeZone } = require("date-fns-timezone")
 const dateFns = require('date-fns')
+const { Op } = require('sequelize')
 const { CourseRealisation, CourseRealisationsOrganisation, InactiveCourseRealisation } = require("../../models")
 const { safeBulkCreate } = require("../util")
 const { formatWithHours, formatCourseName } = require("./utils")
@@ -87,6 +88,16 @@ const createInactiveCourseRealisations = async (inactiveCourseRealisations) => {
   }
 }
 
+const deleteInactiveCourseRealisations = async (courseRealisations) => {
+  await InactiveCourseRealisation.destroy({
+    where: {
+      id: {
+        [Op.in]: courseRealisations.map(cur => cur.id)
+      }
+    }
+  })
+}
+
 const createCourseRealisations = async (courseRealisations) => {
   for (const {
     id,
@@ -137,5 +148,6 @@ const createCourseRealisations = async (courseRealisations) => {
 
 module.exports = {
   createCourseRealisations,
-  createInactiveCourseRealisations
+  createInactiveCourseRealisations,
+  deleteInactiveCourseRealisations,
 }
