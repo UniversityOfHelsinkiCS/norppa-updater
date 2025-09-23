@@ -434,9 +434,9 @@ const isInactiveRealisationType = (course) => {
     if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
     // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
     // See inactiveRealisationTypes above
-    if (realisationType.organisationIds) {
+    if (realisationType.excludeOrganisationIds) {
       const courseOrgIds = course.organisations.map(org => org.id)
-      if (_.intersection(courseOrgIds, realisationType.organisationIds).length > 0) return false
+      if (_.intersection(courseOrgIds, realisationType.excludeOrganisationIds).length > 0) return false
     }
 
     return true
