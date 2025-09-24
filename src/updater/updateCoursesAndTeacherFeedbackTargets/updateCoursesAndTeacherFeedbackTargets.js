@@ -420,7 +420,7 @@ const isValidRealisationType = (course) => {
     // If realisationType has organisationIds defined, check that they overlap with course's organisation ids
     // See validRealisationTypes above
     if (realisationType.organisationIds) {
-      const courseOrgIds = course.organisations.map(org => org.id)
+      const courseOrgIds = course.organisations.map(org => org.organisationId)
       if (_.intersection(courseOrgIds, realisationType.organisationIds).length === 0) return false
     }
 
@@ -435,7 +435,7 @@ const isInactiveRealisationType = (course) => {
     // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
     // See inactiveRealisationTypes above
     if (realisationType.excludeOrganisationIds) {
-      const courseOrgIds = course.organisations.map(org => org.id)
+      const courseOrgIds = course.organisations.map(org => org.organisationId)
       if (_.intersection(courseOrgIds, realisationType.excludeOrganisationIds).length > 0) return false
     }
 
@@ -463,8 +463,6 @@ const coursesHandler = async (courses) => {
 
   const filteredCourses = _.uniqBy(norppaEnabledCourses.concat(sisuFilteredCourses), 'id')
 
-  const passesBothFilters = _.intersectionBy(norppaEnabledCourses, sisuFilteredCourses, 'id')
-
   const cancelledCourses = courses.filter(
     (course) => course.flowState === 'CANCELLED',
   )
@@ -490,8 +488,8 @@ const coursesHandler = async (courses) => {
 
   await createInactiveCourseRealisations(inactiveCourseRealisations)
   // Delete inactive course realisations that are acually active
-  if (passesBothFilters.length > 0) {
-    await deleteInactiveCourseRealisations(passesBothFilters)
+  if (sisuFilteredCourses.length > 0) {
+    await deleteInactiveCourseRealisations(sisuFilteredCourses)
   }
 }
 
