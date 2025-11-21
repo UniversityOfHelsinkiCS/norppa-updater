@@ -475,12 +475,16 @@ const coursesHandler = async (initialCourses) => {
   const archivedCourses = await getArchivedCoursesToDelete(courses)
   const archivedCourseIds = archivedCourses.map((course) => course.id)
 
+  const deletedOrDraftCourses = initialCourses.filter(c => ['DELETED', 'DRAFT'].includes(c.documentState))
+  const deletedOrDraftCourseIds = deletedOrDraftCourses.map((course) => course.id)
+
   await createCourseRealisations(filteredCourses)
 
   await createFeedbackTargets(filteredCourses)
 
   if (cancelledCourseIds.length > 0) await deleteCancelledCourses(cancelledCourseIds)
   if (archivedCourseIds.length > 0) await deleteCancelledCourses(archivedCourseIds)
+  if (deletedOrDraftCourses.length > 0) await deleteCancelledCourses(deletedOrDraftCourseIds)
 
   const inactiveCourseRealisations = courses.filter(
     (course) =>
