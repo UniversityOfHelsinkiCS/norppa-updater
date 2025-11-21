@@ -443,7 +443,10 @@ const isInactiveRealisationType = (course) => {
   })
 }
 
-const coursesHandler = async (courses) => {
+const coursesHandler = async (initialCourses) => {
+  // Filter out DELETED and DRAFT courses
+  const courses = initialCourses.filter(c => !['DELETED', 'DRAFT'].includes(c.documentState))
+
   // Filter out old AY courses. Already existing ones remain in db.
   const courseUnits = courses
     .flatMap((course) => course.courseUnits)
