@@ -413,35 +413,33 @@ const getArchivedCoursesToDelete = async (courses) => {
   return archivedCoursesWithoutFeedback
 }
 
-const isValidRealisationType = (course) => {
-  return validRealisationTypes.some( realisationType => {
-    // realisationType does not match?
-    if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
-    // If realisationType has organisationIds defined, check that they overlap with course's organisation ids
-    // See validRealisationTypes above
-    if (realisationType.organisationIds) {
-      const courseOrgIds = course.organisations.map(org => org.organisationId)
-      if (_.intersection(courseOrgIds, realisationType.organisationIds).length === 0) return false
-    }
+const isValidRealisationType = (course) => validRealisationTypes.some(realisationType => {
+  // realisationType does not match?
+  if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
 
-    return true
-  })
-}
+  // If realisationType has organisationIds defined, check that they overlap with course's organisation ids
+  // See validRealisationTypes above
+  if (realisationType.organisationIds) {
+    const courseOrgIds = course.organisations.map(org => org.organisationId)
+    if (_.intersection(courseOrgIds, realisationType.organisationIds).length === 0) return false
+  }
 
-const isInactiveRealisationType = (course) => {
-  return inactiveRealisationTypes.some( realisationType => {
-    // realisationType does not match?
-    if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
-    // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
-    // See inactiveRealisationTypes above
-    if (realisationType.excludeOrganisationIds) {
-      const courseOrgIds = course.organisations.map(org => org.organisationId)
-      if (_.intersection(courseOrgIds, realisationType.excludeOrganisationIds).length > 0) return false
-    }
+  return true
+})
 
-    return true
-  })
-}
+const isInactiveRealisationType = (course) => inactiveRealisationTypes.some(realisationType => {
+  // realisationType does not match?
+  if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
+
+  // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
+  // See inactiveRealisationTypes above
+  if (realisationType.excludeOrganisationIds) {
+    const courseOrgIds = course.organisations.map(org => org.organisationId)
+    if (_.intersection(courseOrgIds, realisationType.excludeOrganisationIds).length > 0) return false
+  }
+
+  return true
+})
 
 const coursesHandler = async (initialCourses) => {
   // Filter out DELETED and DRAFT courses
