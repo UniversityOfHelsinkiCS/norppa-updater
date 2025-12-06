@@ -23,7 +23,7 @@ const mangleData = require('../mangleData')
 const { sequelize } = require('../../db/dbConnection')
 const { safeBulkCreate } = require('../util')
 const { createCourseRealisations, createInactiveCourseRealisations, deleteInactiveCourseRealisations } = require('./createCourseRealisations')
-const { formatWithHours, getFeedbackCount } = require('./utils')
+const { formatWithHours, getFeedbackCount, getPrimaryCourseUnitIdForCourseRealisation } = require('./utils')
 const { createStudyGroups } = require('./createStudyGroups')
 const { updateTeacherFeedbackTargets } = require('./updateTeacherFeedbackTargets')
 
@@ -115,7 +115,13 @@ const getIncludeCurs = async () => {
 
 // Find the correct course unit for the course realisation.
 // For courses that have different name in different languages, the course unit with the highest similarity ranking is chosen.
-const getCourseUnit = ({ activityPeriod, courseUnits, name }) => {
+const getCourseUnit = ({ activityPeriod, courseUnits, id, name }) => {
+  // Check if primary CU is explicitly defined based on teachers' feedback
+  const primaryCourseUnitId = getPrimaryCourseUnitIdForCourseRealisation(id)
+  if (primaryCourseUnitId && courseUnits.some(cu => cu.id === primaryCourseUnitId)) {
+    return courseUnits.find(cu => cu.id === primaryCourseUnitId)
+  }
+
   const { startDate: realisationStartDate } = activityPeriod
 
   const latestCourseUnit = courseUnits.sort((a, b) => {
