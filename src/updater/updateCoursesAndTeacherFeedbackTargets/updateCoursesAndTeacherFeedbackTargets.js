@@ -114,12 +114,14 @@ const getIncludeCurs = async () => {
 }
 
 // Find the correct course unit for the course realisation.
+// If teacher has requested specific course unit, it is selected directly.
 // For courses that have different name in different languages, the course unit with the highest similarity ranking is chosen.
 const getCourseUnit = ({ activityPeriod, courseUnits, id, name }) => {
   // Check if primary CU is explicitly defined based on teachers' feedback
   const primaryCourseUnitId = getPrimaryCourseUnitIdForCourseRealisation(id)
-  if (primaryCourseUnitId && courseUnits.some(cu => cu.id === primaryCourseUnitId)) {
-    return courseUnits.find(cu => cu.id === primaryCourseUnitId)
+  if (primaryCourseUnitId) {
+    const primaryCourseUnit = courseUnits.find(cu => cu.id === primaryCourseUnitId)
+    if (primaryCourseUnit) return primaryCourseUnit
   }
 
   const { startDate: realisationStartDate } = activityPeriod

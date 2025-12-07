@@ -99,15 +99,14 @@ const formatCourseName = (id, name, nameSpecifier, lang) => {
 // In case a course realisation belongs to many course units, updater tries to guess which one is the primary one.
 // Sometimes teachers are not happy with the guess and they give feedback. If the course realisation is on this mapping,
 // the correct course unit is selected directly without guessing.
-// You can add new cases to this map as [curId, cuId]
-const primaryCourseUnits = new Map([
-  ['hy-opt-cur-2526-44c4994b-35ac-420d-9cb4-0b13a3c2a03e', 'otm-9e3bb204-ebef-45ef-912c-e7ca8e18aa53'],
-  ['hy-opt-cur-2526-3b2e9946-2e1f-44c3-a38d-ba88da8281ce', 'otm-fdc7e4a3-2105-4548-ae9f-6fe1aea3c1b4']
-])
+// You can add new cases to this object as {curId: cuId}
+const primaryCourseUnits = {
+  'hy-opt-cur-2526-44c4994b-35ac-420d-9cb4-0b13a3c2a03e': 'otm-9e3bb204-ebef-45ef-912c-e7ca8e18aa53',
+  'hy-opt-cur-2526-3b2e9946-2e1f-44c3-a38d-ba88da8281ce': 'otm-fdc7e4a3-2105-4548-ae9f-6fe1aea3c1b4',
+}
 
 const getPrimaryCourseUnitIdForCourseRealisation = (curId) =>
-  primaryCourseUnits.get(curId)  // undefined if curId not found
-
+  primaryCourseUnits[curId]  // undefined if curId not found
 
 module.exports = {
   formatWithHours,
