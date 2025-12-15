@@ -15,6 +15,8 @@ const IMPORTER_API_URL = process.env.IMPORTER_API_URL || ''
 
 const DATABASE_URL = process.env.DATABASE_URL ||''
 
+const JAMI_URL = inProduction && !inStaging ? process.env.JAMI_URL : `http://${process.env.JAMI_HOST}:${process.env.JAMI_PORT}`
+
 const REDIS_CONFIG = {
   url: `redis://default:redis@${REDIS_HOST}:6379`,
 }
@@ -24,6 +26,7 @@ module.exports = {
   inStaging,
   GIT_SHA,
   DATABASE_URL,
+  JAMI_URL,
   PORT,
   NODE_ENV,
   API_TOKEN,

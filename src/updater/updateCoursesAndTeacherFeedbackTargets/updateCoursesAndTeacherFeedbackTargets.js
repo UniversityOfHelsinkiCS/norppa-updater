@@ -26,6 +26,7 @@ const { createCourseRealisations, createInactiveCourseRealisations, deleteInacti
 const { formatWithHours, getFeedbackCount, getPrimaryCourseUnitIdForCourseRealisation } = require('./utils')
 const { createStudyGroups } = require('./createStudyGroups')
 const { updateTeacherFeedbackTargets } = require('./updateTeacherFeedbackTargets')
+const { getNorppaLevelOrganisationIds } = require('../../util/jami')
 
 const validRealisationTypes = [
   { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lab', },
@@ -79,11 +80,19 @@ const createCourseUnits = async (courseUnits) => {
     },
   })
 
+  const norppaLevelOrgIds = await getNorppaLevelOrganisationIds()
+
   const courseUnitsOrganisations = courseUnits
     .flatMap(({ id: courseUnitId, organisations }) =>
-      organisations
-        .filter(({ share, organisationId }) => share !== 0 && organisationId)
-        .sort((a, b) => b.share - a.share)
+      _.orderBy(
+        organisations
+        .filter(({ share, organisationId }) => share !== 0 && organisationId),
+        [
+          (organisation) => norppaLevelOrgIds.includes(organisation.organisationId) ? 1 : 0,
+          'share'
+        ],
+        ['desc', 'desc']
+      )
         .map(({ organisationId }, index) => ({
           type: index === 0 ? 'PRIMARY' : 'DIRECT',
           courseUnitId,
@@ -98,7 +107,11 @@ const createCourseUnits = async (courseUnits) => {
       CourseUnitsOrganisation.bulkCreate(entities, opt),
     fallbackCreate: async (entity, opt) =>
       CourseUnitsOrganisation.upsert(entity, opt),
-    options: { ignoreDuplicates: true },
+    options: {
+      ignoreDuplicates: true,
+      conflictAttributes: ['courseUnitId', 'organisationId'],
+      updateOnDuplicate: ['type']
+    },
   })
 }
 
