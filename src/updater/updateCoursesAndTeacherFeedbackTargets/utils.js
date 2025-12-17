@@ -103,6 +103,9 @@ const formatCourseName = (id, name, nameSpecifier, lang) => {
 const primaryCourseUnits = {
   'hy-opt-cur-2526-44c4994b-35ac-420d-9cb4-0b13a3c2a03e': 'otm-9e3bb204-ebef-45ef-912c-e7ca8e18aa53',
   'hy-opt-cur-2526-3b2e9946-2e1f-44c3-a38d-ba88da8281ce': 'otm-fdc7e4a3-2105-4548-ae9f-6fe1aea3c1b4',
+  'hy-opt-cur-2526-857e0154-95bf-4896-924b-64c80e4f4550': 'otm-e0f14aeb-dc09-4271-b200-25257ef45e17',
+  'hy-opt-cur-2526-4b6f8889-d9d3-41cb-a208-517e4c854426': 'otm-102db264-cbe1-4d86-ba03-64f8399f9dc9',
+  'hy-opt-cur-2526-fdea65df-4e73-42d1-bc2b-51b01b4bec40': 'otm-7f9885df-b907-4bc6-803f-9d79fbddb05d'
 }
 
 const getPrimaryCourseUnitIdForCourseRealisation = (curId) =>

@@ -109,8 +109,6 @@ const createCourseUnits = async (courseUnits) => {
       CourseUnitsOrganisation.upsert(entity, opt),
     options: {
       ignoreDuplicates: true,
-      conflictAttributes: ['courseUnitId', 'organisationId'],
-      updateOnDuplicate: ['type']
     },
   })
 }
