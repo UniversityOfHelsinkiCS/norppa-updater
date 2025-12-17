@@ -99,18 +99,15 @@ const createCourseUnits = async (courseUnits) => {
           organisationId,
         })),
     )
-
-  await safeBulkCreate({
-    entityName: 'CourseUnitsOrganisation',
-    entities: courseUnitsOrganisations,
-    bulkCreate: async (entities, opt) =>
-      CourseUnitsOrganisation.bulkCreate(entities, opt),
-    fallbackCreate: async (entity, opt) =>
-      CourseUnitsOrganisation.upsert(entity, opt),
-    options: {
-      ignoreDuplicates: true,
-    },
-  })
+  
+  // In this case, bulk create does not work with unique constraint (course_unit_id, organisation_id), so upsert in a loop.
+  for (const cuOrg of courseUnitsOrganisations) {
+    await CourseUnitsOrganisation.upsert(cuOrg, {
+      returning: [],
+      conflictFields: ['course_unit_id', 'organisation_id'],
+      updateOnDuplicate: ['type']
+    })
+  }
 }
 
 const getIncludeCurs = async () => {
