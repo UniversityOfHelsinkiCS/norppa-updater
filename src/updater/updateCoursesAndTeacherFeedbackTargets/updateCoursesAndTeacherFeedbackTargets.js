@@ -1,5 +1,5 @@
 const dateFns = require('date-fns')
-const { stringSimilarity } = require("string-similarity-js")
+const { stringSimilarity } = require('string-similarity-js')
 const { parseFromTimeZone } = require('date-fns-timezone')
 const { Op } = require('sequelize')
 const _ = require('lodash')
@@ -22,30 +22,37 @@ const logger = require('../../util/logger')
 const mangleData = require('../mangleData')
 const { sequelize } = require('../../db/dbConnection')
 const { safeBulkCreate } = require('../util')
-const { createCourseRealisations, createInactiveCourseRealisations, deleteInactiveCourseRealisations } = require('./createCourseRealisations')
+const {
+  createCourseRealisations,
+  createInactiveCourseRealisations,
+  deleteInactiveCourseRealisations,
+} = require('./createCourseRealisations')
 const { formatWithHours, getFeedbackCount, getPrimaryCourseUnitIdForCourseRealisation } = require('./utils')
 const { createStudyGroups } = require('./createStudyGroups')
 const { updateTeacherFeedbackTargets } = require('./updateTeacherFeedbackTargets')
 const { getNorppaLevelOrganisationIds } = require('../../util/jami')
 
 const validRealisationTypes = [
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lab', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-online', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-field-course', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-project', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lectures', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-small-group', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-seminar', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-blended', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-contact', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-distance', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', organisationIds: ['hy-org-1000003401'], } // language center
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lab' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-online' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-field-course' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-project' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lectures' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-small-group' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-seminar' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-blended' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-contact' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-distance' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', organisationIds: ['hy-org-1000003401'] }, // language center
 ]
 
 const inactiveRealisationTypes = [
-  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project', excludeOrganisationIds: ['hy-org-1000003401'], },
-  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-essay', },
-  { typeUrn: 'urn:code:course-unit-realisation-type:training-training', }
+  {
+    typeUrn: 'urn:code:course-unit-realisation-type:independent-work-project',
+    excludeOrganisationIds: ['hy-org-1000003401'],
+  },
+  { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-essay' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:training-training' },
 ]
 
 const commonFeedbackName = {
@@ -54,10 +61,10 @@ const commonFeedbackName = {
   sv: 'Allmän respons om kursen',
 }
 
-const createCourseUnits = async (courseUnits) => {
+const createCourseUnits = async courseUnits => {
   const ids = new Set()
   const filteredCourseUnits = courseUnits
-    .filter((cu) => {
+    .filter(cu => {
       if (ids.has(cu.id)) return false
       ids.add(cu.id)
       return true
@@ -82,30 +89,24 @@ const createCourseUnits = async (courseUnits) => {
 
   const norppaLevelOrgIds = await getNorppaLevelOrganisationIds()
 
-  const courseUnitsOrganisations = courseUnits
-    .flatMap(({ id: courseUnitId, organisations }) =>
-      _.orderBy(
-        organisations
-        .filter(({ share, organisationId }) => share !== 0 && organisationId),
-        [
-          (organisation) => norppaLevelOrgIds.includes(organisation.organisationId) ? 1 : 0,
-          'share'
-        ],
-        ['desc', 'desc']
-      )
-        .map(({ organisationId }, index) => ({
-          type: index === 0 ? 'PRIMARY' : 'DIRECT',
-          courseUnitId,
-          organisationId,
-        })),
-    )
-  
+  const courseUnitsOrganisations = courseUnits.flatMap(({ id: courseUnitId, organisations }) =>
+    _.orderBy(
+      organisations.filter(({ share, organisationId }) => share !== 0 && organisationId),
+      [organisation => (norppaLevelOrgIds.includes(organisation.organisationId) ? 1 : 0), 'share'],
+      ['desc', 'desc']
+    ).map(({ organisationId }, index) => ({
+      type: index === 0 ? 'PRIMARY' : 'DIRECT',
+      courseUnitId,
+      organisationId,
+    }))
+  )
+
   // In this case, bulk create does not work with unique constraint (course_unit_id, organisation_id), so upsert in a loop.
   for (const cuOrg of courseUnitsOrganisations) {
     await CourseUnitsOrganisation.upsert(cuOrg, {
       returning: [],
       conflictFields: ['course_unit_id', 'organisation_id'],
-      updateOnDuplicate: ['type']
+      updateOnDuplicate: ['type'],
     })
   }
 }
@@ -134,7 +135,14 @@ const getCourseUnit = ({ activityPeriod, courseUnits, id, name }) => {
 
   const { startDate: realisationStartDate } = activityPeriod
 
-  const latestCourseUnit = courseUnits.sort((a, b) => {
+  // Filter out courseUnits where validityPeriod starts after the realisation starts.
+  let potentialCourseUnits = courseUnits.filter(cu => {
+    return !dateFns.isBefore(new Date(realisationStartDate), new Date(cu.validityPeriod.startDate))
+  })
+  // Fallback to original options if no 'overlapping' course units.
+  potentialCourseUnits = potentialCourseUnits.length === 0 ? courseUnits : potentialCourseUnits
+
+  const latestCourseUnit = potentialCourseUnits.sort((a, b) => {
     const { startDate: aStartDate } = a.validityPeriod
     const { startDate: bStartDate } = b.validityPeriod
 
@@ -143,33 +151,39 @@ const getCourseUnit = ({ activityPeriod, courseUnits, id, name }) => {
     return dateFns.isAfter(new Date(aStartDate), new Date(bStartDate)) ? -1 : 1
   })[0]
 
-  const scientificallyAccurateCUs = courseUnits.map((courseUnit) => {
-    const getSimilarityRanking = (language) => stringSimilarity(name[language] ?? '', courseUnit.name[language] ?? '')
-    
-    const fiSimilarity = getSimilarityRanking('fi') 
+  const scientificallyAccurateCUs = potentialCourseUnits.map(courseUnit => {
+    const getSimilarityRanking = language => stringSimilarity(name[language] ?? '', courseUnit.name[language] ?? '')
+
+    const fiSimilarity = getSimilarityRanking('fi')
     const enSimilarity = getSimilarityRanking('en')
-    const svSimilarity = getSimilarityRanking('sv') 
+    const svSimilarity = getSimilarityRanking('sv')
 
     const similarityRanking = Math.max(fiSimilarity, enSimilarity, svSimilarity)
 
-    return ({ ...courseUnit, similarityRanking })
+    return { ...courseUnit, similarityRanking }
   })
 
-  const sortedCourseUnits = _.orderBy(scientificallyAccurateCUs, ['similarityRanking', (cu) => {
-    const { startDate } = cu.validityPeriod.startDate
+  const sortedCourseUnits = _.orderBy(
+    scientificallyAccurateCUs,
+    [
+      'similarityRanking',
+      cu => {
+        const { startDate } = cu.validityPeriod.startDate
 
-    return Date.parse(startDate)
-  }], ['desc', 'desc'])
+        return Date.parse(startDate)
+      },
+    ],
+    ['desc', 'desc']
+  )
 
+  const courseUnit =
+    sortedCourseUnits.find(({ validityPeriod }) => {
+      const { startDate } = validityPeriod
 
-  const courseUnit = sortedCourseUnits.find(({ validityPeriod }) => {
-    const { startDate } = validityPeriod
+      if (!startDate) return false
 
-    if (!startDate) return false
-
-    return dateFns.isAfter(new Date(realisationStartDate), new Date(startDate))
-  }) ?? sortedCourseUnits[0]
-
+      return dateFns.isAfter(new Date(realisationStartDate), new Date(startDate))
+    }) ?? sortedCourseUnits[0]
 
   return latestCourseUnit.code === courseUnit.code ? latestCourseUnit : courseUnit
 }
@@ -177,15 +191,18 @@ const getCourseUnit = ({ activityPeriod, courseUnits, id, name }) => {
 const getResponsibilityInfos = (_courseUnit, courseRealisation) => {
   const combinedResponsibilityInfos = courseRealisation.responsibilityInfos //.concat(courseUnit.responsibilityInfos)
 
-  const uniqueResponsibilityInfos = _.uniqBy(combinedResponsibilityInfos, ({ personId, roleUrn }) => `${personId}${roleUrn}`)
+  const uniqueResponsibilityInfos = _.uniqBy(
+    combinedResponsibilityInfos,
+    ({ personId, roleUrn }) => `${personId}${roleUrn}`
+  )
 
   return uniqueResponsibilityInfos
 }
 
-const createFeedbackTargets = async (courses) => {
+const createFeedbackTargets = async courses => {
   const courseIdToPersonIds = {}
 
-  const feedbackTargetPayloads = courses.map((course) => {
+  const feedbackTargetPayloads = courses.map(course => {
     const courseUnit = getCourseUnit(course)
 
     const responsibilityInfos = getResponsibilityInfos(courseUnit, course)
@@ -194,9 +211,7 @@ const createFeedbackTargets = async (courses) => {
       .filter(({ personId }) => personId)
       .map(({ personId, roleUrn }) => ({ personId, roleUrn }))
 
-    const courseEndDate = dateFns.endOfDay(
-      new Date(course.activityPeriod.endDate),
-    )
+    const courseEndDate = dateFns.endOfDay(new Date(course.activityPeriod.endDate))
 
     const opensAtWithoutTimeZone = formatWithHours(dateFns.startOfDay(courseEndDate))
 
@@ -204,9 +219,7 @@ const createFeedbackTargets = async (courses) => {
       timeZone: 'Europe/Helsinki',
     })
 
-    const closesAtWithoutTimeZone = formatWithHours(
-      dateFns.endOfDay(dateFns.addDays(courseEndDate, 14)),
-    )
+    const closesAtWithoutTimeZone = formatWithHours(dateFns.endOfDay(dateFns.addDays(courseEndDate, 14)))
 
     const closesAt = parseFromTimeZone(closesAtWithoutTimeZone, {
       timeZone: 'Europe/Helsinki',
@@ -227,9 +240,7 @@ const createFeedbackTargets = async (courses) => {
   const existingCourseUnits = await CourseUnit.findAll({
     where: {
       id: {
-        [Op.in]: _.uniq(
-          feedbackTargetPayloads.map(({ courseUnitId }) => courseUnitId),
-        ),
+        [Op.in]: _.uniq(feedbackTargetPayloads.map(({ courseUnitId }) => courseUnitId)),
       },
     },
     attributes: ['id'],
@@ -238,7 +249,7 @@ const createFeedbackTargets = async (courses) => {
   const existingCourseUnitIds = existingCourseUnits.map(({ id }) => id)
 
   const feedbackTargets = feedbackTargetPayloads.filter(({ courseUnitId }) =>
-    existingCourseUnitIds.includes(courseUnitId),
+    existingCourseUnitIds.includes(courseUnitId)
   )
 
   const feedbackTargetsWithEditedDatesIds = await FeedbackTarget.findAll({
@@ -248,13 +259,11 @@ const createFeedbackTargets = async (courses) => {
     attributes: ['typeId'],
   })
 
-  const feedbackTargetsWithEditedDatesTypeIds =
-    feedbackTargetsWithEditedDatesIds.map((fbt) => fbt.typeId)
+  const feedbackTargetsWithEditedDatesTypeIds = feedbackTargetsWithEditedDatesIds.map(fbt => fbt.typeId)
 
-  const [feedbackTargetsWithEditedDates, feedbackTargetsWithoutEditedDates] =
-    _.partition(feedbackTargets, (fbt) =>
-      feedbackTargetsWithEditedDatesTypeIds.includes(fbt.typeId),
-    )
+  const [feedbackTargetsWithEditedDates, feedbackTargetsWithoutEditedDates] = _.partition(feedbackTargets, fbt =>
+    feedbackTargetsWithEditedDatesTypeIds.includes(fbt.typeId)
+  )
 
   const feedbackTargetsWithEditedWithIds = await safeBulkCreate({
     entityName: 'FeedbackTarget',
@@ -278,16 +287,14 @@ const createFeedbackTargets = async (courses) => {
     },
   })
 
-  const feedbackTargetsWithIds = feedbackTargetsWithEditedWithIds.concat(
-    feedbackTargetsWithoutEditedWithIds,
-  )
+  const feedbackTargetsWithIds = feedbackTargetsWithEditedWithIds.concat(feedbackTargetsWithoutEditedWithIds)
 
   const teacherGroups = await createStudyGroups(feedbackTargetsWithIds, courses)
 
   await updateTeacherFeedbackTargets(feedbackTargetsWithIds, teacherGroups, courseIdToPersonIds, courses)
 }
 
-const deleteCancelledCourses = async (cancelledCourseIds) => {
+const deleteCancelledCourses = async cancelledCourseIds => {
   const rows = await sequelize.query(
     `
     SELECT count(user_feedback_targets.feedback_id) as feedback_count, feedback_targets.course_realisation_id
@@ -302,10 +309,10 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
         cancelledCourseIds,
       },
       type: sequelize.QueryTypes.SELECT,
-    },
+    }
   )
 
-  const courseRealisationIds = rows.map((row) => row.course_realisation_id)
+  const courseRealisationIds = rows.map(row => row.course_realisation_id)
 
   if (courseRealisationIds.length === 0) {
     return
@@ -320,7 +327,7 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
     attributes: ['id'],
   })
 
-  const feedbackTargetIds = feedbackTargets.map((target) => target.id)
+  const feedbackTargetIds = feedbackTargets.map(target => target.id)
 
   logger.info(`Starting to delete fbts with the following cur ids: ${courseRealisationIds}`)
 
@@ -358,8 +365,8 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
     where: {
       feedbackTargetId: {
         [Op.in]: feedbackTargetIds,
-      }
-    }
+      },
+    },
   })
 
   logger.info(`Destroyed ${destroyedGroups} groups`)
@@ -374,18 +381,15 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
 
   logger.info(`Destroyed ${destroyedFeedbackTargets} feedback targets`)
 
-  const destroyedCourseRealisationOrganisations =
-    await CourseRealisationsOrganisation.destroy({
-      where: {
-        courseRealisationId: {
-          [Op.in]: courseRealisationIds,
-        },
+  const destroyedCourseRealisationOrganisations = await CourseRealisationsOrganisation.destroy({
+    where: {
+      courseRealisationId: {
+        [Op.in]: courseRealisationIds,
       },
-    })
+    },
+  })
 
-  logger.info(
-    `Destroyed ${destroyedCourseRealisationOrganisations} course realisation organisations`,
-  )
+  logger.info(`Destroyed ${destroyedCourseRealisationOrganisations} course realisation organisations`)
 
   const destroyedCourseRealisationsTags = await CourseRealisationsTag.destroy({
     where: {
@@ -395,9 +399,7 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
     },
   })
 
-  logger.info(
-    `Destroyed ${destroyedCourseRealisationsTags} course realisations tags`,
-  )
+  logger.info(`Destroyed ${destroyedCourseRealisationsTags} course realisations tags`)
 
   const destroyedCourseRealisations = await CourseRealisation.destroy({
     where: {
@@ -409,61 +411,59 @@ const deleteCancelledCourses = async (cancelledCourseIds) => {
 
   logger.info(`Destroyed ${destroyedCourseRealisations} course realisations`)
 }
- 
-const getArchivedCoursesToDelete = async (courses) => {
-  const allArchivedCourses = courses.filter(
-    (course) => course.flowState === 'ARCHIVED',
-  )
+
+const getArchivedCoursesToDelete = async courses => {
+  const allArchivedCourses = courses.filter(course => course.flowState === 'ARCHIVED')
 
   await Promise.all(
-    allArchivedCourses.map(async (course) => {
+    allArchivedCourses.map(async course => {
       const feedbackCount = await getFeedbackCount(course.id)
       course.feedbackCount = feedbackCount
-    }),
+    })
   )
 
-  const archivedCoursesWithoutFeedback = allArchivedCourses.filter(
-    (course) => course.feedbackCount === 0,
-  )
+  const archivedCoursesWithoutFeedback = allArchivedCourses.filter(course => course.feedbackCount === 0)
 
   return archivedCoursesWithoutFeedback
 }
 
-const isValidRealisationType = (course) => validRealisationTypes.some(realisationType => {
-  // realisationType does not match?
-  if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
+const isValidRealisationType = course =>
+  validRealisationTypes.some(realisationType => {
+    // realisationType does not match?
+    if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
 
-  // If realisationType has organisationIds defined, check that they overlap with course's organisation ids
-  // See validRealisationTypes above
-  if (realisationType.organisationIds) {
-    const courseOrgIds = course.organisations.map(org => org.organisationId)
-    if (_.intersection(courseOrgIds, realisationType.organisationIds).length === 0) return false
-  }
+    // If realisationType has organisationIds defined, check that they overlap with course's organisation ids
+    // See validRealisationTypes above
+    if (realisationType.organisationIds) {
+      const courseOrgIds = course.organisations.map(org => org.organisationId)
+      if (_.intersection(courseOrgIds, realisationType.organisationIds).length === 0) return false
+    }
 
-  return true
-})
+    return true
+  })
 
-const isInactiveRealisationType = (course) => inactiveRealisationTypes.some(realisationType => {
-  // realisationType does not match?
-  if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
+const isInactiveRealisationType = course =>
+  inactiveRealisationTypes.some(realisationType => {
+    // realisationType does not match?
+    if (realisationType.typeUrn !== course.courseUnitRealisationTypeUrn) return false
 
-  // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
-  // See inactiveRealisationTypes above
-  if (realisationType.excludeOrganisationIds) {
-    const courseOrgIds = course.organisations.map(org => org.organisationId)
-    if (_.intersection(courseOrgIds, realisationType.excludeOrganisationIds).length > 0) return false
-  }
+    // If realisationType has excludeOrganisationIds defined, check that they do not overlap with course's organisation ids
+    // See inactiveRealisationTypes above
+    if (realisationType.excludeOrganisationIds) {
+      const courseOrgIds = course.organisations.map(org => org.organisationId)
+      if (_.intersection(courseOrgIds, realisationType.excludeOrganisationIds).length > 0) return false
+    }
 
-  return true
-})
+    return true
+  })
 
-const coursesHandler = async (initialCourses) => {
+const coursesHandler = async initialCourses => {
   // Filter out DELETED and DRAFT courses
   const courses = initialCourses.filter(c => !['DELETED', 'DRAFT'].includes(c.documentState))
 
   // Filter out old AY courses. Already existing ones remain in db.
   const courseUnits = courses
-    .flatMap((course) => course.courseUnits)
+    .flatMap(course => course.courseUnits)
     .filter(({ code }) => !(code.startsWith('AY') && !code.match('^AY[0-9]+$')))
 
   await createCourseUnits(courseUnits)
@@ -472,25 +472,25 @@ const coursesHandler = async (initialCourses) => {
 
   const norppaEnabledCourses = courses.filter(course => includeCurs.includes(course.id))
 
-  const sisuFilteredCourses = courses.filter(course =>
-    course.courseUnits.length &&
-    isValidRealisationType(course) &&
-    course.flowState !== 'CANCELLED' && course.flowState !== 'ARCHIVED'
+  const sisuFilteredCourses = courses.filter(
+    course =>
+      course.courseUnits.length &&
+      isValidRealisationType(course) &&
+      course.flowState !== 'CANCELLED' &&
+      course.flowState !== 'ARCHIVED'
   )
 
   const filteredCourses = _.uniqBy(norppaEnabledCourses.concat(sisuFilteredCourses), 'id')
 
-  const cancelledCourses = courses.filter(
-    (course) => course.flowState === 'CANCELLED',
-  )
+  const cancelledCourses = courses.filter(course => course.flowState === 'CANCELLED')
 
-  const cancelledCourseIds = cancelledCourses.map((course) => course.id)
+  const cancelledCourseIds = cancelledCourses.map(course => course.id)
 
   const archivedCourses = await getArchivedCoursesToDelete(courses)
-  const archivedCourseIds = archivedCourses.map((course) => course.id)
+  const archivedCourseIds = archivedCourses.map(course => course.id)
 
   const deletedOrDraftCourses = initialCourses.filter(c => ['DELETED', 'DRAFT'].includes(c.documentState))
-  const deletedOrDraftCourseIds = deletedOrDraftCourses.map((course) => course.id)
+  const deletedOrDraftCourseIds = deletedOrDraftCourses.map(course => course.id)
 
   await createCourseRealisations(filteredCourses)
 
@@ -501,10 +501,7 @@ const coursesHandler = async (initialCourses) => {
   if (deletedOrDraftCourses.length > 0) await deleteCancelledCourses(deletedOrDraftCourseIds)
 
   const inactiveCourseRealisations = courses.filter(
-    (course) =>
-      course.courseUnits.length &&
-      isInactiveRealisationType(course) &&
-      course.flowState !== 'CANCELLED',
+    course => course.courseUnits.length && isInactiveRealisationType(course) && course.flowState !== 'CANCELLED'
   )
 
   await createInactiveCourseRealisations(inactiveCourseRealisations)
@@ -518,11 +515,7 @@ const coursesHandler = async (initialCourses) => {
 const SPEED = 1000
 
 const updateCoursesAndTeacherFeedbackTargets = async () => {
-  await mangleData(
-    'course_unit_realisations_with_course_units',
-    SPEED,
-    coursesHandler,
-  )
+  await mangleData('course_unit_realisations_with_course_units', SPEED, coursesHandler)
 }
 
 module.exports = {
