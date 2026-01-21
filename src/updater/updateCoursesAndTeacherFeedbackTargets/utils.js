@@ -1,11 +1,11 @@
-const { Op } = require("sequelize")
-const { format } = require("date-fns")
+const { Op } = require('sequelize')
+const { format } = require('date-fns')
 
-const { FeedbackTarget, UserFeedbackTarget, Feedback } = require("../../models")
+const { FeedbackTarget, UserFeedbackTarget, Feedback } = require('../../models')
 
-const formatWithHours = (date) => format(date, 'yyyy-MM-dd HH:mm:ss')
+const formatWithHours = date => format(date, 'yyyy-MM-dd HH:mm:ss')
 
-const getFeedbackCount = async (courseRealisationId) => {
+const getFeedbackCount = async courseRealisationId => {
   const feedbackTargets = await FeedbackTarget.findAll({
     where: {
       courseRealisationId,
@@ -13,7 +13,7 @@ const getFeedbackCount = async (courseRealisationId) => {
     attributes: ['id'],
   })
 
-  const feedbackTargetIds = feedbackTargets.map((target) => target.id)
+  const feedbackTargetIds = feedbackTargets.map(target => target.id)
 
   const feedbackCount = await Feedback.count({
     include: [
@@ -51,17 +51,17 @@ const getLanguageValue = (values, preferred) => {
 }
 
 // Documents created in sisu have id format of `otm-{UUID}`
-const isSisuNativeId = (id) => id && id.startsWith('otm-')
+const isSisuNativeId = id => id && id.startsWith('otm-')
 
-const isAiliOriginatingId = (id) => id && id.startsWith('hy-cur-aili-')
+const isAiliOriginatingId = id => id && id.startsWith('hy-cur-aili-')
 
-const hasSisuLikeNamingConvention = (id) => id.startsWith('otm-') || id.startsWith('hy-cur-aili-')
+const hasSisuLikeNamingConvention = id => id.startsWith('otm-') || id.startsWith('hy-cur-aili-')
 
-const isOptimeOriginatingId = (id) => id && id.startsWith('hy-opt-cur-')
+const isOptimeOriginatingId = id => id && id.startsWith('hy-opt-cur-')
 
 const courseNameWithCourseType = (name, type, lang) => {
-  const nameTranslated = typeof (name) === 'string' ? name : getLanguageValue(name, lang)
-  const typeTranslated = typeof (type) === 'string' ? type : getLanguageValue(type, lang)
+  const nameTranslated = typeof name === 'string' ? name : getLanguageValue(name, lang)
+  const typeTranslated = typeof type === 'string' ? type : getLanguageValue(type, lang)
 
   if (!nameTranslated) {
     return typeTranslated
@@ -69,7 +69,7 @@ const courseNameWithCourseType = (name, type, lang) => {
   if (!typeTranslated) {
     return nameTranslated
   }
-  return `${nameTranslated}, ${typeTranslated}`
+  return `${nameTranslated} | ${typeTranslated}`
 }
 
 /**
@@ -90,7 +90,8 @@ const courseNameWithCourseType = (name, type, lang) => {
 const formatCourseName = (id, name, nameSpecifier, lang) => {
   if (hasSisuLikeNamingConvention(id)) {
     return courseNameWithCourseType(nameSpecifier, name, lang)
-  } if (isOptimeOriginatingId(id)) {
+  }
+  if (isOptimeOriginatingId(id)) {
     return courseNameWithCourseType(name, null, lang)
   }
   return courseNameWithCourseType(name, nameSpecifier, lang)
@@ -105,11 +106,10 @@ const primaryCourseUnits = {
   'hy-opt-cur-2526-3b2e9946-2e1f-44c3-a38d-ba88da8281ce': 'otm-fdc7e4a3-2105-4548-ae9f-6fe1aea3c1b4',
   'hy-opt-cur-2526-857e0154-95bf-4896-924b-64c80e4f4550': 'otm-e0f14aeb-dc09-4271-b200-25257ef45e17',
   'hy-opt-cur-2526-4b6f8889-d9d3-41cb-a208-517e4c854426': 'otm-102db264-cbe1-4d86-ba03-64f8399f9dc9',
-  'hy-opt-cur-2526-fdea65df-4e73-42d1-bc2b-51b01b4bec40': 'otm-7f9885df-b907-4bc6-803f-9d79fbddb05d'
+  'hy-opt-cur-2526-fdea65df-4e73-42d1-bc2b-51b01b4bec40': 'otm-7f9885df-b907-4bc6-803f-9d79fbddb05d',
 }
 
-const getPrimaryCourseUnitIdForCourseRealisation = (curId) =>
-  primaryCourseUnits[curId]  // undefined if curId not found
+const getPrimaryCourseUnitIdForCourseRealisation = curId => primaryCourseUnits[curId] // undefined if curId not found
 
 module.exports = {
   formatWithHours,
@@ -120,5 +120,5 @@ module.exports = {
   isOptimeOriginatingId,
   courseNameWithCourseType,
   formatCourseName,
-  getPrimaryCourseUnitIdForCourseRealisation
+  getPrimaryCourseUnitIdForCourseRealisation,
 }
