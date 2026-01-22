@@ -15,7 +15,7 @@ services:
       - 8000:3003
     container_name: updater-dev
   db:
-    image: postgres:13.2
+    image: postgres:13.23
     environment:
       - PGDATA=/data
       - POSTGRES_PASSWORD=postgres
@@ -25,7 +25,7 @@ services:
       - pg_data:/data
     container_name: updater-db
   redis:
-    image: redis:6.2.6
+    image: redis:6.2.21
     command: redis-server
     container_name: updater-redis
 
