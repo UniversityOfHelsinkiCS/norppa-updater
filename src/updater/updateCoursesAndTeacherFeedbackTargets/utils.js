@@ -63,7 +63,7 @@ const courseNameWithCourseType = (name, type, lang) => {
   const nameTranslated = typeof name === 'string' ? name : getLanguageValue(name, lang)
   const typeTranslated = typeof type === 'string' ? type : getLanguageValue(type, lang)
 
-  if (!nameTranslated || typeTranslated.startsWith(nameTranslated)) {
+  if (!nameTranslated || (typeof typeTranslated === 'string' && typeTranslated.startsWith(nameTranslated))) {
     return typeTranslated
   }
   if (!typeTranslated) {
