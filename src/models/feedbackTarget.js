@@ -365,6 +365,9 @@ FeedbackTarget.init(
       allowNull: false,
       defaultValue: false,
     },
+    continuousFeedbackIngress: {
+      type: TEXT,
+    },
     continuousFeedbackCount: {
       type: VIRTUAL,
       get() {
