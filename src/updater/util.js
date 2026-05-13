@@ -21,7 +21,11 @@ const safeBulkCreate = async ({
     return result
   } catch (error) {
     const result = []
-    logError(`[UPDATER] ${entityName}.bulkCreate failed, reason: `, error)
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      logger.info(`[UPDATER] ${entityName}.bulkCreate failed due to unknown foreign key, retrying one by one`)
+    } else {
+      logError(`[UPDATER] ${entityName}.bulkCreate failed, reason: `, error)
+    }
     logger.info(`[UPDATER] Creating ${entityName}s one by one`)
     for (const entity of entities) {
       try {
