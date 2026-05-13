@@ -365,7 +365,7 @@ FeedbackTarget.init(
       allowNull: false,
       defaultValue: false,
     },
-    continuousFeedbackIngress: {
+    continuousFeedbackPreamble: {
       type: TEXT,
     },
     continuousFeedbackCount: {
