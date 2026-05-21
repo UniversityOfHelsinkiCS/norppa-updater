@@ -35,7 +35,7 @@
     "redis": "^4.6.12",
     "sequelize": "^6.35.1",
     "string-similarity-js": "^2.1.4",
-    "umzug": "^2.3.0",
+    "umzug": "^3.0.0",
     "winston": "^3.8.1",
     "winston-gelf-transporter": "^1.0.2",
     "winston-loki": "^6.1.3"
