@@ -53,6 +53,7 @@ const inactiveRealisationTypes = [
   },
   { typeUrn: 'urn:code:course-unit-realisation-type:independent-work-essay' },
   { typeUrn: 'urn:code:course-unit-realisation-type:training-training' },
+  { typeUrn: 'urn:code:course-unit-realisation-type:thesis-masters' },
 ]
 
 const commonFeedbackName = {
@@ -136,7 +137,9 @@ const getCourseUnit = ({ activityPeriod, courseUnits, id, name }) => {
   const { startDate: realisationStartDate } = activityPeriod
 
   // Filter out courseUnits where validityPeriod starts after the realisation starts.
-  let potentialCourseUnits = courseUnits.filter(cu => !dateFns.isBefore(new Date(realisationStartDate), new Date(cu.validityPeriod.startDate)))
+  let potentialCourseUnits = courseUnits.filter(
+    cu => !dateFns.isBefore(new Date(realisationStartDate), new Date(cu.validityPeriod.startDate))
+  )
   // Fallback to original options if no 'overlapping' course units.
   potentialCourseUnits = potentialCourseUnits.length === 0 ? courseUnits : potentialCourseUnits
 
