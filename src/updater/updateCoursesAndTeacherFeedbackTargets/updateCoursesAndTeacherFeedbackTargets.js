@@ -32,6 +32,7 @@ const { createStudyGroups } = require('./createStudyGroups')
 const { updateTeacherFeedbackTargets } = require('./updateTeacherFeedbackTargets')
 const { getNorppaLevelOrganisationIds } = require('../../util/jami')
 
+// if adding new valid realisation types, add them to importer's palaute config too
 const validRealisationTypes = [
   { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-lab' },
   { typeUrn: 'urn:code:course-unit-realisation-type:teaching-participation-online' },
@@ -513,10 +514,10 @@ const coursesHandler = async initialCourses => {
 }
 
 // default 1000, set to 10 for example when debugging
-const SPEED = 1000
+const BATCH_SIZE = 1000
 
 const updateCoursesAndTeacherFeedbackTargets = async () => {
-  await mangleData('course_unit_realisations_with_course_units', SPEED, coursesHandler)
+  await mangleData('course_unit_realisations_with_course_units', BATCH_SIZE, coursesHandler)
 }
 
 module.exports = {
