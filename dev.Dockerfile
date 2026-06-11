@@ -4,7 +4,7 @@ ENV TZ="Europe/Helsinki"
 
 WORKDIR /usr/src/app
 
-RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+COPY ./.npmrc .
 COPY package* ./
 RUN npm ci
 
