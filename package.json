@@ -21,6 +21,9 @@
     "url": "https://github.com/UniversityOfHelsinkiCS/norppa-updater/issues"
   },
   "homepage": "https://github.com/UniversityOfHelsinkiCS/norppa-updater#readme",
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
     "@sentry/node": "^6.7.2",
     "@sentry/tracing": "^6.7.2",
