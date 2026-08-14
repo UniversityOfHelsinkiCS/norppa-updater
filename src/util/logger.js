@@ -1,8 +1,5 @@
-const os = require('os')
-
 const winston = require('winston')
 const LokiTransport = require('winston-loki')
-const { WinstonGelfTransporter } = require('winston-gelf-transporter')
 
 const { inProduction } = require('./config')
 
@@ -18,15 +15,14 @@ if (process.env.NODE_ENV !== 'test') {
 
 if (!inProduction) {
   const devFormat = printf(
-    ({ level, message, timestamp, ...rest }) =>
-      `${timestamp} ${level}: ${message} ${JSON.stringify(rest)}`,
+    ({ level, message, timestamp, ...rest }) => `${timestamp} ${level}: ${message} ${JSON.stringify(rest)}`
   )
 
   transports.push(
     new winston.transports.Console({
       level: 'debug',
       format: combine(splat(), timestamp(), devFormat),
-    }),
+    })
   )
 }
 
@@ -45,7 +41,7 @@ if (inProduction) {
     JSON.stringify({
       level: levels[level],
       ...rest,
-    }),
+    })
   )
 
   transports.push(new winston.transports.Console({ format: prodFormat }))
@@ -53,21 +49,7 @@ if (inProduction) {
   transports.push(
     new LokiTransport({
       host: LOKI_HOST,
-      labels: { app: 'norppa-updater', environment: process.env.NODE_ENV || 'production' }
-    })
-  )
-
-  transports.push(
-    new WinstonGelfTransporter({
-      handleExceptions: true,
-      host: 'svm-116.cs.helsinki.fi',
-      port: 9503,
-      protocol: 'udp',
-      hostName: os.hostname(),
-      additional: {
-        app: 'norppa-updater',
-        environment: 'production'
-      }
+      labels: { app: 'norppa-updater', environment: process.env.NODE_ENV || 'production' },
     })
   )
 }
