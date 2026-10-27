@@ -59,7 +59,6 @@ const mangleData = async (url, limit, handler, since = null) => {
       } catch (e) {
         logError('Updaterloop fetch error:', e)
         e.isLogged = true
-        e.isFetchError = true
         throw e
       }
 
@@ -99,8 +98,6 @@ const mangleData = async (url, limit, handler, since = null) => {
       offset += limit
       
     } catch (e) {
-      // nextData stays rejected, so retrying would spin on the same error until OOM
-      if (e.isFetchError) throw e
       if (!e.isLogged) {
         logError('Unknown updaterloop error:', e)
       }
